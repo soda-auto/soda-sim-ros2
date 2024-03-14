@@ -57,8 +57,8 @@ public class SodaROS2 : ModuleRules
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
-            PublicAdditionalLibraries.Add(Path.Combine(ROSWrapperLibPath, "libros2_ue_wrapper.lib"));
-            PublicAdditionalLibraries.Add(Path.Combine(AmantPrefixLibPath, "librcl.a"));
+            PublicAdditionalLibraries.Add(Path.Combine(ROSWrapperLibPath, "libros2_ue_wrapper.so"));
+            PublicAdditionalLibraries.Add(Path.Combine(AmantPrefixLibPath, "librcl.so"));
 
             PublicRuntimeLibraryPaths.Add(AmantPrefixLibPath);
             PrivateRuntimeLibraryPaths.Add(AmantPrefixLibPath);

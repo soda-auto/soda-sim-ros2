@@ -109,40 +109,9 @@ protected:
 
 namespace ros2
 {
-	template<typename MessageT>
-	class SODAROS2_API TPublisher : public ros2_ue_wrapper::TPublisher<MessageT>
-	{
-	public:
-		TPublisher(TSharedPtr<ros2_ue_wrapper::FNode> Node, const FString& Topic, const FQoS& QoS)
-			: ros2_ue_wrapper::TPublisher<MessageT>(*Node->GetInner(), TCHAR_TO_UTF8(*Topic), QoS.Create())
-			, Node(Node)
-		{}
-		~TPublisher()
-		{
-			Node.Reset();
-			FSodaROS2Module::Get().CheckUnregisterNode();
-		}
-		TSharedPtr<ros2_ue_wrapper::FNode> Node;
-	};
-
-	template<typename MessageT>
-	class SODAROS2_API TSubscription : public ros2_ue_wrapper::TSubscription<MessageT>
-	{
-	public:
-		template<typename TCallback>
-		TSubscription(TSharedPtr<ros2_ue_wrapper::FNode> Node, const FString& Topic, const FQoS& QoS, TCallback&& Callback)
-			: ros2_ue_wrapper::TSubscription<MessageT>(*Node->GetInner(), TCHAR_TO_UTF8(*Topic), QoS.Create(), Callback)
-			, Node(Node)
-		{}
-		~TSubscription()
-		{
-			Node.Reset();
-			FSodaROS2Module::Get().CheckUnregisterNode();
-		}
-		TSharedPtr<ros2_ue_wrapper::FNode> Node;
-	};
-};
-
+	template<typename MessageT> class SODAROS2_API TPublisher;
+	template<typename MessageT> class SODAROS2_API TSubscription;
+}
 
 class SODAROS2_API FSodaROS2Module : public IModuleInterface
 {
@@ -213,4 +182,40 @@ protected:
 	TSharedPtr<ros2_ue_wrapper::FSingleThreadedExecutor> Executor;
 	std::thread Thread;
 	std::mutex Mutex;
+};
+
+namespace ros2
+{
+	template<typename MessageT>
+	class SODAROS2_API TPublisher : public ros2_ue_wrapper::TPublisher<MessageT>
+	{
+	public:
+		TPublisher(TSharedPtr<ros2_ue_wrapper::FNode> Node, const FString& Topic, const FQoS& QoS)
+			: ros2_ue_wrapper::TPublisher<MessageT>(*Node->GetInner(), TCHAR_TO_UTF8(*Topic), QoS.Create())
+			, Node(Node)
+		{}
+		~TPublisher()
+		{
+			Node.Reset();
+			FSodaROS2Module::Get().CheckUnregisterNode();
+		}
+		TSharedPtr<ros2_ue_wrapper::FNode> Node;
+	};
+
+	template<typename MessageT>
+	class SODAROS2_API TSubscription : public ros2_ue_wrapper::TSubscription<MessageT>
+	{
+	public:
+		template<typename TCallback>
+		TSubscription(TSharedPtr<ros2_ue_wrapper::FNode> Node, const FString& Topic, const FQoS& QoS, TCallback&& Callback)
+			: ros2_ue_wrapper::TSubscription<MessageT>(*Node->GetInner(), TCHAR_TO_UTF8(*Topic), QoS.Create(), Callback)
+			, Node(Node)
+		{}
+		~TSubscription()
+		{
+			Node.Reset();
+			FSodaROS2Module::Get().CheckUnregisterNode();
+		}
+		TSharedPtr<ros2_ue_wrapper::FNode> Node;
+	};
 };

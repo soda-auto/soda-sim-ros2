@@ -1,0 +1,1 @@
+colcon build --merge-install --install-base Linux --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF -DCMAKE_TOOLCHAIN_FILE=../Scripts/Build/unreal-linux-toolchain.cmake 

@@ -1,0 +1,33 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "SodaROS2",
+	"Description": "",
+	"Category": "Soda",
+	"CreatedBy": "Soda LTD",
+	"CreatedByURL": "http://soda.auto",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": false,
+	"IsBetaVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "SodaROS2PreLoading",
+			"Type": "Runtime",
+			"LoadingPhase": "EarliestPossible"
+		},
+		{
+			"Name": "SodaROS2",
+			"Type": "Runtime"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "SodaSim",
+			"Enabled": true
+		}
+	]
+}

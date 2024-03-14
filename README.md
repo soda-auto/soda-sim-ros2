@@ -70,7 +70,7 @@ We don't build ROS2 from source for Windows. We use official prebuiled releases 
     ``` 
     $ call <REPO_ROOT>/ros2-windows/local_setup.bat
     $ cd <REPO_ROOT>/ros2-ue-wrapper
-    $ colcon build --merge-install --install-base Win64 --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF 
+    $ colcon build --merge-install --install-base install_win64 --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF 
     ```
 
 ### For Linux 
@@ -97,7 +97,7 @@ Tested on Ubuntu 22.04 only.
     ``` 
     $ source <REPO_ROOT>/ros2-windows/local_setup.sh
 	$ export UE_ENGINE=<PATH_TO_UNREAL_ENGINE>/Engine
-	$ colcon build --merge-install --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF -DCMAKE_TOOLCHAIN_FILE=<REPO_ROOT>/Scripts/Build/unreal-linux-toolchain.cmake 
+	$ colcon build --merge-install --install-base install_linux --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF -DCMAKE_TOOLCHAIN_FILE=<REPO_ROOT>/Scripts/Build/unreal-linux-toolchain.cmake 
 	```
 
 ## Copyright and License

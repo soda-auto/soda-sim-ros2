@@ -80,7 +80,7 @@ void FSodaROS2Module::StartupModule()
 #if PLATFORM_WINDOWS
 	TArray<FString> DllPaths =
 	{
-		FPaths::Combine(ROS2PluginDir, "ros2-ue-wrapper", "Win64", "Bin" , "ros2_ue_wrapper.dll"),
+		FPaths::Combine(ROS2PluginDir, "ros2-ue-wrapper", "install_win64", "Bin" , "ros2_ue_wrapper.dll"),
 		FPaths::Combine(ROSGuard.GetBinDir(),  "rcl.dll")
 	};
 

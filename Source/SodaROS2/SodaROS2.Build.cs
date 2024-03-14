@@ -13,12 +13,12 @@ public class SodaROS2 : ModuleRules
         if (Target.Platform == UnrealTargetPlatform.Win64)
         {
             AmantPrefixPath = Path.Combine(PluginDirectory, "ros2-windows");
-            ROSWrapper = Path.Combine(PluginDirectory, "ros2-ue-wrapper", "Win64");
+            ROSWrapper = Path.Combine(PluginDirectory, "ros2-ue-wrapper", "install_win64");
         }
         else if (Target.Platform == UnrealTargetPlatform.Linux)
         {
             AmantPrefixPath = Path.Combine(PluginDirectory, "ros2-linux");
-            ROSWrapper = Path.Combine(PluginDirectory, "ros2-ue-wrapper", "Linux");
+            ROSWrapper = Path.Combine(PluginDirectory, "ros2-ue-wrapper", "install_linux");
         }
 
         string AmantPrefixIncludePath = Path.Combine(AmantPrefixPath, "include");

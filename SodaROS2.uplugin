@@ -15,11 +15,6 @@
 	"Installed": false,
 	"Modules": [
 		{
-			"Name": "SodaROS2PreLoading",
-			"Type": "Runtime",
-			"LoadingPhase": "EarliestPossible"
-		},
-		{
 			"Name": "SodaROS2",
 			"Type": "Runtime"
 		}

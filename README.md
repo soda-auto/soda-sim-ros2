@@ -24,7 +24,7 @@ The plugin includes a pre-compiled ROS2 workspace.
   
 > [!IMPORTANT] 
 > **For Linux Only:**  
-> If you you using the plugin with Unreal Editor or using the [Module Build Mode](https://docs.unrealengine.com/5.3/en-US/unreal-build-tool-in-unreal-engine/) you must perform ``` $ source ros2-linux/local_setup.sh``` every time before start IDE or UnrealEngine or UProject.
+> If you you using the plugin with Unreal Editor or using the [Module Build Mode](https://docs.unrealengine.com/5.3/en-US/unreal-build-tool-in-unreal-engine/) you must perform ``` $ source ros2-linux/setup.bash``` every time before start IDE or UnrealEngine or UProject.
   
 ## What is Currently Implemented
  - The **Generic Camera Sensor Publisher** using [sensor_msgs/msg/Image](https://docs.ros2.org/latest/api/sensor_msgs/msg/Image.html).
@@ -61,14 +61,14 @@ We don't build ROS2 from source for Windows. We use official prebuiled releases 
   - Open *x64 Native Tools Command Prompt for VS 2022*
   - Build and install the [ackermann_msgs](https://github.com/ros-drivers/ackermann_msgs/tree/ros2) to the *ros2-windows* folder:
     ```
-    $ call <REPO_ROOT>/ros2-windows/local_setup.bat
+    $ call <REPO_ROOT>/ros2-windows/setup.bat
     $ cd <ACKERMAN_MSGS_ROOT>
     $ colcon build --merge-install
     $ cp -a <ACKERMAN_MSGS_ROOT>/Install/. <REPO_ROOT>/ros2-windows/
     ```
   - Build and install the **ros2-ue-wrapper**:
     ``` 
-    $ call <REPO_ROOT>/ros2-windows/local_setup.bat
+    $ call <REPO_ROOT>/ros2-windows/setup.bat
     $ cd <REPO_ROOT>/ros2-ue-wrapper
     $ colcon build --merge-install --install-base install_win64 --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF 
     ```
@@ -87,7 +87,7 @@ Tested on Ubuntu 22.04 only.
 	```
   - Build and install the [ackermann_msgs](https://github.com/ros-drivers/ackermann_msgs/tree/ros2) to the *ros2-linux* folder:
     ```
-    $ source <REPO_ROOT>/ros2-windows/local_setup.sh
+    $ source <REPO_ROOT>/ros2-windows/setup.bash
 	$ export UE_ENGINE=<PATH_TO_UNREAL_ENGINE>/Engine
     $ cd <ACKERMAN_MSGS_ROOT>
     $ colcon build --merge-install --cmake-args -DCMAKE_TOOLCHAIN_FILE=<REPO_ROOT>/Scripts/Build/unreal-linux-toolchain.cmake
@@ -95,7 +95,7 @@ Tested on Ubuntu 22.04 only.
     ```
   - Build and install the **ros2-ue-wrapper**:
     ``` 
-    $ source <REPO_ROOT>/ros2-windows/local_setup.sh
+    $ source <REPO_ROOT>/ros2-windows/setup.bash
 	$ export UE_ENGINE=<PATH_TO_UNREAL_ENGINE>/Engine
 	$ colcon build --merge-install --install-base install_linux --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF -DCMAKE_TOOLCHAIN_FILE=<REPO_ROOT>/Scripts/Build/unreal-linux-toolchain.cmake 
 	```

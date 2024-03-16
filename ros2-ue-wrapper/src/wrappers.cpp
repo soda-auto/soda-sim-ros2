@@ -219,10 +219,12 @@ public:
 // -----------------------------------------------------------------------------------------
 
 template<typename MessageT>
-TSubscription<MessageT>::TSubscription(rclcpp::Node & Node, const std::string& Topic, const FQoS & QoS, std::function<void(const std::shared_ptr<MessageT>)> Callback)
+TSubscription<MessageT>::TSubscription(rclcpp::Node & Node, const std::string& Topic, const FQoS & QoS)
 {
 	Subscription = std::make_shared<TSubscriptionImpl<MessageT>>();
-	Subscription->GetInner() = Node.create_subscription<MessageT >(Topic, GetQoS(QoS), Callback);
+	Subscription->GetInner() = Node.create_subscription<MessageT >(Topic, GetQoS(QoS), 
+		std::bind(&TSubscription<MessageT>::Callback, this, std::placeholders::_1)
+	);
 }
 
 template<typename MessageT>

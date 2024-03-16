@@ -6,8 +6,8 @@
 :: packages contained in this prefix path.
 
 :: source chained prefixes
-call:_colcon_prefix_chain_bat_call_script "C:\UnrealProjects\SodaSimProject\Plugins\SodaROS2\ros2-windows\local_setup.bat"
-call:_colcon_prefix_chain_bat_call_script "C:\UnrealProjects\SodaSimProject\Plugins\SodaROS2\ros2-windows\\local_setup.bat"
+call:_colcon_prefix_chain_bat_call_script "C:\UnrealProjects\SodaSimProject\Plugins\soda-sim-ros2\ros2-windows\local_setup.bat"
+call:_colcon_prefix_chain_bat_call_script "C:\UnrealProjects\SodaSimProject\Plugins\soda-sim-ros2\ros2-windows\\local_setup.bat"
 
 :: source this prefix
 call:_colcon_prefix_chain_bat_call_script "%%~dp0local_setup.bat"

@@ -19,7 +19,7 @@ _colcon_prefix_chain_zsh_source_script() {
 
 # source chained prefixes
 # setting COLCON_CURRENT_PREFIX avoids determining the prefix in the sourced script
-COLCON_CURRENT_PREFIX="/home/ivan/ros2_build2/install"
+COLCON_CURRENT_PREFIX="/home/ivan/SodaSimProject/Plugins/soda-sim-ros2/ros2-linux"
 _colcon_prefix_chain_zsh_source_script "$COLCON_CURRENT_PREFIX/local_setup.zsh"
 
 # source this prefix

@@ -40,7 +40,6 @@ public:
 	virtual FString GetRemark() const override;
 
 protected:
-	void TopicCallback(const std::shared_ptr<ackermann_msgs::msg::AckermannDriveStamped> Msg);
 
 	TSharedPtr<ros2::TSubscription<ackermann_msgs::msg::AckermannDriveStamped>> Subscription;
 	ackermann_msgs::msg::AckermannDriveStamped Msg;

@@ -43,8 +43,8 @@ bool UROS2LidarLaserScanPublisher::Publish(float DeltaTime, const FSensorDataHea
 		Msg.header.frame_id = TCHAR_TO_UTF8(*FrameID);
 
 		Msg.angle_min = Scan.HorizontalAngleMin / 180.0 * M_PI;
-		Msg.angle_max = Scan.HorizontalAngleMax / 180.0 * M_PI;;
-		Msg.angle_increment = (Scan.HorizontalAngleMax - Scan.HorizontalAngleMin) / Scan.Size->X;
+		Msg.angle_max = Scan.HorizontalAngleMax / 180.0 * M_PI;
+		Msg.angle_increment = (Scan.HorizontalAngleMax - Scan.HorizontalAngleMin) / Scan.Size->X / 180.0 * M_PI;
 		Msg.time_increment = 0;
 		Msg.scan_time = DeltaTime;
 		Msg.range_min = Scan.RangeMin / 100;

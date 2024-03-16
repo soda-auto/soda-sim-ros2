@@ -10,15 +10,13 @@ bool UROS2AckermannControl::StartListen(UVehicleBaseComponent* Parent)
 {
 	StopListen();
 
-	Subscription = FSodaROS2Module::Get().CreateSubscription<ackermann_msgs::msg::AckermannDriveStamped>(NodeNamespace, Topic, QoS,
-		std::bind(&UROS2AckermannControl::TopicCallback, this, std::placeholders::_1));
+	Subscription = FSodaROS2Module::Get().CreateSubscription<ackermann_msgs::msg::AckermannDriveStamped>(
+		NodeNamespace, Topic, QoS,
+		[this](const std::shared_ptr<ackermann_msgs::msg::AckermannDriveStamped> InMsg) {
+			Msg = *InMsg;
+			RecvTimestamp = soda::Now();
+		});
 	return Subscription.IsValid();
-}
-
-void UROS2AckermannControl::TopicCallback(const std::shared_ptr<ackermann_msgs::msg::AckermannDriveStamped> InMsg)
-{
-	Msg = *InMsg;
-	RecvTimestamp = soda::Now();
 }
 
 void UROS2AckermannControl::StopListen()
@@ -38,6 +36,7 @@ bool UROS2AckermannControl::GetControl(soda::FGenericWheeledVehiclControl& Contr
 	Control.TargetSpeedReq = Msg.drive.speed * 100;
 	Control.SteeringAngleVelocity = Msg.drive.steering_angle_velocity;
 	Control.bGearIsSet = false;
+	Control.bTargetSpeedIsSet = true;
 	Control.SteerReqMode = soda::FGenericWheeledVehiclControl::ESteerReqMode::ByAngle;
 	Control.DriveEffortReqMode = soda::FGenericWheeledVehiclControl::EDriveEffortReqMode::ByAcc;
 	Control.Timestamp = RecvTimestamp;

@@ -136,8 +136,10 @@ template<typename MessageT>
 class ROS2_UE_WRAPPER_PUBLIC TSubscription
 {
 public:
-	TSubscription(rclcpp::Node & Node, const std::string& Topic, const FQoS & QoS, std::function<void(const std::shared_ptr<MessageT>)> Callback);
+	TSubscription(rclcpp::Node & Node, const std::string& Topic, const FQoS & QoS);
 	virtual ~TSubscription();
+	
+	virtual void Callback(const std::shared_ptr<MessageT> Msg) { }
 	
 private:
 	std::shared_ptr<TSubscriptionImpl<MessageT> > Subscription;

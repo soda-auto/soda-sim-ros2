@@ -144,8 +144,8 @@ public:
 		return {};
 	}
 
-	template<typename MessageT, typename TCallback>
-	TSharedPtr<ros2::TSubscription<MessageT>> CreateSubscription(const FString& NodeNamespace, const FString& Topic, struct FQoS& QoS, TCallback&& Callback)
+	template<typename MessageT>
+	TSharedPtr<ros2::TSubscription<MessageT>> CreateSubscription(const FString& NodeNamespace, const FString& Topic, struct FQoS& QoS, TFunction<void(const std::shared_ptr<MessageT>)>  Callback)
 	{
 		FROS2DllDirectoryGuard Ros2Dir;
 		TSharedPtr<ros2_ue_wrapper::FNode> Node;
@@ -206,16 +206,23 @@ namespace ros2
 	class SODAROS2_API TSubscription : public ros2_ue_wrapper::TSubscription<MessageT>
 	{
 	public:
-		template<typename TCallback>
-		TSubscription(TSharedPtr<ros2_ue_wrapper::FNode> Node, const FString& Topic, const FQoS& QoS, TCallback&& Callback)
-			: ros2_ue_wrapper::TSubscription<MessageT>(*Node->GetInner(), TCHAR_TO_UTF8(*Topic), QoS.Create(), Callback)
+		TSubscription(TSharedPtr<ros2_ue_wrapper::FNode> Node, const FString& Topic, const FQoS& QoS, TFunction<void(const std::shared_ptr<MessageT>)>  InCallbackDelegate)
+			: ros2_ue_wrapper::TSubscription<MessageT>(*Node->GetInner(), TCHAR_TO_UTF8(*Topic), QoS.Create())
+			, CallbackDelegate(InCallbackDelegate)
 			, Node(Node)
-		{}
+		{
+		}
 		~TSubscription()
 		{
 			Node.Reset();
 			FSodaROS2Module::Get().CheckUnregisterNode();
 		}
+		virtual void Callback(const std::shared_ptr<MessageT> Msg) override
+		{
+			CallbackDelegate(Msg);
+		}
+		TFunction<void(const std::shared_ptr<MessageT>)>  CallbackDelegate;
 		TSharedPtr<ros2_ue_wrapper::FNode> Node;
+
 	};
 };

@@ -1,15 +1,14 @@
 # SODA.Sim ROS2 Plugin 
 ![SodaSim](Docs/img/promo.png)
-This repository is a plugin for UnrealEngine and an extension of the [SODA.Sim](https://github.com/soda-auto/SodaSim) plugin to support ROS2 capabilities.
-This plugin includes all the necessary precompiled ROS2 dependencies for windows and linux and does not require any other external dependencies.  
-Current version of ROS2 is **Humble**.    
-The plugin includes a pre-compiled ROS2 workspace.
+This repository is a plugin for UnrealEngine and an extension of the [SODA.Sim](https://github.com/soda-auto/SodaSim) plugin to support ROS2 capabilities the for SODA.Sim.
+This plugin includes all the necessary precompiled ROS2 dependencies (ROS2 workspace) for windows and linux and does not require any other external ROS2 dependencies.  
+Current version of supported ROS2 is **Humble**.  
 
 > [!WARNING]
-> **Resticted:**
->   - For the Linux version supported only FastDDS RMW.
+> For the Linux version supported only FastDDS RMW.
 
-
+> [!WARNING]
+> This is an MVP (Minimum Viable Product) and an experiment to integrate ROS2 with UnrealEngine and SODA.Sim.
 
 ## Installing and Using
   - Make sure the [SODA.Sim](https://github.com/soda-auto/SodaSim) is installed.  
@@ -20,7 +19,7 @@ The plugin includes a pre-compiled ROS2 workspace.
   - Download and install the Win64 OpenSSL v1.1.1 from [this page](https://slproweb.com/products/Win32OpenSSL.html).
   
 **For Linux:**  
-  - Instal depences (TODO: Which?)
+  - Install depences (TODO: Which?)
   
 > [!IMPORTANT] 
 > **For Linux Only:**  

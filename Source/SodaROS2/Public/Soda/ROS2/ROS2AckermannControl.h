@@ -23,7 +23,7 @@ public:
 	FString NodeNamespace = "SodaSim";
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2AckermannControl, SaveGame, meta = (EditInRuntime, ReactivateComponent))
-	FString Topic = "/vehicle/vehciel_control";
+	FString Topic = "/vehicle/vehcile_control";
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2AckermannControl, SaveGame, meta = (DisplayName="QoS", EditInRuntime, ReactivateComponent))
 	FQoS QoS;

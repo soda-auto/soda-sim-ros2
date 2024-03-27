@@ -41,63 +41,36 @@ Current version of supported ROS2 is **Humble**.
  - The **Generic Wheeled Vehicle Control**  using [ackermann_msgs/msg/AckermannDriveStamped](https://github.com/ros-drivers/ackermann_msgs/blob/ros2/msg/AckermannDriveStamped.msg). Using for control the wheeled vehicle via ackermann messages. To use it, add the **Generic Vehicle Dirver** to the vehicle and changle the **Vehicle Control Class** to **ROS2AckermannControl**.
  
 ## What Next
- - Support of the [ros2 control](https://control.ros.org/master/index.html) .
- - Support radar and ultrasonic sensors.
- - Add the fully equipped turtlebot model.
- - Add custom messages to control SODA.Sim via ROS2.
- - Support the time sync messages
- - Add CAN/LIN/IO/Serial virtual hardware interfaces
- - Suggest to us what we're missed ?
+  - Support of the [ros2 control](https://control.ros.org/master/index.html) .
+  - Support radar and ultrasonic sensors.
+  - Add the fully equipped turtlebot model.
+  - Add custom messages to control SODA.Sim via ROS2.
+  - Support the time sync messages
+  - Add CAN/LIN/IO/Serial virtual hardware interfaces
+  - Suggest to us what we're missed ?
   
-## How to Build ROS2 Workspace Manuly
-Usually, you do not need to compile ROS2 from source code, but if you still have a need for this, then below it will be described how to do this for Windows and Linux.
+## Build ROS2 Workspace Manuly
+Usually, you do not need to compile ROS2 from source code, but if you still need it see [soda-sim-ros2-ws](https://github.com/soda-auto/soda-sim-ros2-ws).
+
+## Build *ros2-ue-wrapper*
+**ros2-ue-wrapper** is a simple interface (or wrapper) for the **rclcpp** so that UnrealEngine can use the capabilities of **rclcpp** and overcome the problems of:
+  - Disabled RTTI in UnrealEngine
+  - Globally overridden the **new** and **delete** operators in UnrealEngine.
 
 ### For for Windows
-We don't build ROS2 from source for Windows. We use official prebuiled releases from [here](https://github.com/ros2/ros2/releases). 
-  - Perfom all step from [Original Manuale](https://docs.ros.org/en/humble/Installation/Windows-Install-Binary.html#) till to [environment-setup](https://docs.ros.org/en/humble/Installation/Windows-Install-Binary.html#environment-setup).  
-    [Downloading ROS-2](https://docs.ros.org/en/humble/Installation/Windows-Install-Binary.html#downloading-ros-2) to the *ros2-windows* folder.  
-    Note: You can skip "Install OpenCV", "Install Qt5", "RQt dependencies" steps from the manul.
-  - Open *x64 Native Tools Command Prompt for VS 2022*
-  - Build and install the [ackermann_msgs](https://github.com/ros-drivers/ackermann_msgs/tree/ros2) to the *ros2-windows* folder:
-    ```
-    $ call <REPO_ROOT>/ros2-windows/setup.bat
-    $ cd <ACKERMAN_MSGS_ROOT>
-    $ colcon build --merge-install
-    $ cp -a <ACKERMAN_MSGS_ROOT>/Install/. <REPO_ROOT>/ros2-windows/
-    ```
-  - Build and install the **ros2-ue-wrapper**:
-    ``` 
-    $ call <REPO_ROOT>/ros2-windows/setup.bat
-    $ cd <REPO_ROOT>/ros2-ue-wrapper
-    $ colcon build --merge-install --install-base install_win64 --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF 
-    ```
-
+``` 
+$ call <REPO_ROOT>/ros2-windows/setup.bat
+$ cd <REPO_ROOT>/ros2-ue-wrapper
+$ colcon build --merge-install --install-base install_win64 --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF 
+```
 ### For Linux 
-Tested on Ubuntu 22.04 only.  
-  - Perfom all step from [Original Manuale](https://docs.ros.org/en/humble/Installation/Alternatives/Ubuntu-Development-Setup.html) till to [Install additional DDS implementations (optional)](https://docs.ros.org/en/humble/Installation/Alternatives/Ubuntu-Development-Setup.html#id8).
-  - Copy *Scripts/Build/\** to the ROS2 workspace folder
-  - Remove *src/eclipse-cyclonedds* and *src/eclipse-iceoryx* folders
-  - Build ROS2:
-    ```
-	$ export UE_ENGINE=<PATH_TO_UNREAL_ENGINE>/Engine
-	$ ./vcpkg-linux.sh
-	$ ./BuildForLinux.sh
-	$ cp -a Install/. <REPO_ROOT>/ros2-linux/
-	```
-  - Build and install the [ackermann_msgs](https://github.com/ros-drivers/ackermann_msgs/tree/ros2) to the *ros2-linux* folder:
-    ```
-    $ source <REPO_ROOT>/ros2-windows/setup.bash
-	$ export UE_ENGINE=<PATH_TO_UNREAL_ENGINE>/Engine
-    $ cd <ACKERMAN_MSGS_ROOT>
-    $ colcon build --merge-install --cmake-args -DCMAKE_TOOLCHAIN_FILE=<REPO_ROOT>/Scripts/Build/unreal-linux-toolchain.cmake
-    $ cp -a <ACKERMAN_MSGS_ROOT>/Install/. <REPO_ROOT>/ros2-linux/
-    ```
-  - Build and install the **ros2-ue-wrapper**:
-    ``` 
-    $ source <REPO_ROOT>/ros2-windows/setup.bash
-	$ export UE_ENGINE=<PATH_TO_UNREAL_ENGINE>/Engine
-	$ colcon build --merge-install --install-base install_linux --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF -DCMAKE_TOOLCHAIN_FILE=<REPO_ROOT>/Scripts/Build/unreal-linux-toolchain.cmake 
-	```
+``` 
+$ export UE_ENGINE=<PATH_TO_UNREAL_ENGINE>/Engine
+$ source <REPO_ROOT>/ros2-windows/setup.bash
+$ cd <REPO_ROOT>/ros2-ue-wrapper
+$ colcon build --merge-install --install-base install_linux --event-handlers console_direct+ --cmake-args -DBUILD_TESTING=OFF -DCMAKE_TOOLCHAIN_FILE=<SODA_SIM_ROS2_WS>/unreal-linux-toolchain.cmake 
+```
+
 
 ## Copyright and License
 Copyright © 2023 SODA.AUTO UK LTD. ALL RIGHTS RESERVED.  

@@ -36,8 +36,8 @@ bool UROS2AckermannControl::GetControl(soda::FGenericWheeledVehiclControl& Contr
 	Control.TargetSpeedReq = Msg.drive.speed * 100;
 	Control.SteeringAngleVelocity = Msg.drive.steering_angle_velocity;
 	Control.bGearIsSet = false;
-	Control.bTargetSpeedIsSet = FMath::IsNearlyZero(Msg.drive.speed);
-	Control.bSteeringAngleVelocitySet = FMath::IsNearlyZero(Msg.drive.steering_angle_velocity);
+	Control.bTargetSpeedIsSet = !FMath::IsNearlyZero(Msg.drive.speed);
+	Control.bSteeringAngleVelocitySet = !FMath::IsNearlyZero(Msg.drive.steering_angle_velocity);
 	Control.SteerReqMode = soda::FGenericWheeledVehiclControl::ESteerReqMode::ByAngle;
 	Control.DriveEffortReqMode = soda::FGenericWheeledVehiclControl::EDriveEffortReqMode::ByAcc;
 	Control.Timestamp = RecvTimestamp;

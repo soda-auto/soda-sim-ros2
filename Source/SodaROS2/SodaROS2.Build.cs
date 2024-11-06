@@ -27,6 +27,8 @@ public class SodaROS2 : ModuleRules
         string ROSWrapperIncludePath = Path.Combine(ROSWrapper, "include");
         string ROSWrapperLibPath = Path.Combine(ROSWrapper, "lib");
 
+        Console.WriteLine("AmantPrefixPath: " + AmantPrefixPath);
+
         PublicIncludePaths.Add(AmantPrefixIncludePath);
         PublicIncludePaths.Add(ROSWrapperIncludePath);
         PublicIncludePaths.Add(Path.Combine(AmantPrefixIncludePath, "std_msgs"));

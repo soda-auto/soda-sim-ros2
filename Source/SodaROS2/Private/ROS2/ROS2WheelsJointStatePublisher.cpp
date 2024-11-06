@@ -20,13 +20,17 @@ bool UROS2WheelsJointStatePublisher::Advertise(UVehicleBaseComponent* InParent)
 	check(InParent);
 	Parent = InParent;
 
-	Msg.name = 
+	ASodaWheeledVehicle* SodaWheeledVehicle = Cast<ASodaWheeledVehicle>(InParent->GetVehicle());
+	check(SodaWheeledVehicle);
+
+	for (auto & Wheel: SodaWheeledVehicle->GetWheelsSorted())
 	{
-		"wheel_fl_pitch", "wheel_fl_yaw", "wheel_fl_offset",
-		"wheel_fr_pitch", "wheel_fr_yaw", "wheel_fr_offset",
-		"wheel_rl_pitch", "wheel_rl_yaw", "wheel_rl_offset",
-		"wheel_rr_pitch", "wheel_rr_yaw", "wheel_rr_offset",
-	};
+		FString WheelName = Wheel->GetName();
+		Msg.name.push_back(TCHAR_TO_UTF8(*(WheelName + TEXT("_pitch"))));
+		Msg.name.push_back(TCHAR_TO_UTF8(*(WheelName + TEXT("_yaw"))));
+		Msg.name.push_back(TCHAR_TO_UTF8(*(WheelName + TEXT("_offset"))));
+	}
+
 	Msg.position.resize(4 * 3);
 	Msg.velocity.resize(4 * 3);
 	Msg.effort.resize(4 * 3);
@@ -42,75 +46,37 @@ void UROS2WheelsJointStatePublisher::Shutdown()
 
 bool UROS2WheelsJointStatePublisher::Publish(float DeltaTime, const FSensorDataHeader& Header, const FWheeledVehicleSensorData& SensorData)
 {
-	if (IsOk() && SensorData.WheeledVehicle && SensorData.WheeledVehicle->Is4WDVehicle())
+	if (IsOk() && SensorData.WheeledVehicle)
 	{
 		const auto Timestamp = soda::RawTimestamp<std::chrono::nanoseconds>(Header.Timestamp);
 
-		const auto& Wheels = SensorData.WheeledVehicle->GetWheels4WD();
+		const auto& Wheels = SensorData.WheeledVehicle->GetWheelsSorted();
 
 		//Msg.header.seq = Header.FrameIndex;
 		Msg.header.stamp = ros2_ue_wrapper::FromNanoseconds(Timestamp);
 		Msg.header.frame_id = TCHAR_TO_UTF8(*FrameID);
 
-		// wheel_fl_pitch
-		Msg.position[0] = 0;
-		Msg.velocity[0] = Wheels[0]->AngularVelocity;
-		Msg.effort[0] = Wheels[0]->ReqTorq - Wheels[0]->ReqBrakeTorque;
+		
+		for (int i = 0; i < SensorData.WheeledVehicle->GetWheelsSorted().Num(); ++i)
+		{
+			const auto& Wheel = SensorData.WheeledVehicle->GetWheelsSorted()[i];
+			const int ind = i * 3;
 
-		// wheel_fl_yaw
-		Msg.position[1] = -Wheels[0]->Steer;
-		Msg.velocity[1] = 0;
-		Msg.effort[1] = 0;
+			// pitch
+			Msg.position[ind + 0] = 0;
+			Msg.velocity[ind + 0] = Wheel->AngularVelocity;
+			Msg.effort[ind + 0] = Wheel->ReqTorq - Wheel->ReqBrakeTorque;
 
-		// wheel_fl_offset
-		Msg.position[2] = 0;
-		Msg.velocity[2] = 0;
-		Msg.effort[2] = 0;
+			// yaw
+			Msg.position[ind + 1] = -Wheel->Steer;
+			Msg.velocity[ind + 1] = 0;
+			Msg.effort[ind + 1] = 0;
 
-		// wheel_fr_pitch
-		Msg.position[3] = 0;
-		Msg.velocity[3] = Wheels[1]->AngularVelocity;
-		Msg.effort[3] = Wheels[1]->ReqTorq - Wheels[1]->ReqBrakeTorque;
-
-		// wheel_fr_yaw
-		Msg.position[4] = -Wheels[1]->Steer;
-		Msg.velocity[4] = 0;
-		Msg.effort[4] = 0;
-
-		// wheel_fr_offset
-		Msg.position[5] = 0;
-		Msg.velocity[5] = 0;
-		Msg.effort[5] = 0;
-
-		// wheel_rl_pitch
-		Msg.position[6] = 0;
-		Msg.velocity[6] = Wheels[2]->AngularVelocity;
-		Msg.effort[6] = Wheels[2]->ReqTorq - Wheels[2]->ReqBrakeTorque;
-
-		// wheel_rl_yaw
-		Msg.position[7] = -Wheels[2]->Steer;
-		Msg.velocity[7] = 0;
-		Msg.effort[7] = 0;
-
-		// wheel_rl_offset
-		Msg.position[8] = 0;
-		Msg.velocity[8] = 0;
-		Msg.effort[8] = 0;
-
-		// wheel_rr_pitch
-		Msg.position[9] = 0;
-		Msg.velocity[9] = Wheels[3]->AngularVelocity;
-		Msg.effort[9] = Wheels[3]->ReqTorq - Wheels[3]->ReqBrakeTorque;
-
-		// wheel_rr_yaw
-		Msg.position[10] = -Wheels[3]->Steer;
-		Msg.velocity[10] = 0;
-		Msg.effort[10] = 0;
-
-		// wheel_rr_offset
-		Msg.position[11] = 0;
-		Msg.velocity[11] = 0;
-		Msg.effort[11] = 0;
+			// offset
+			Msg.position[ind + 2] = 0;
+			Msg.velocity[ind + 2] = 0;
+			Msg.effort[ind + 2] = 0;
+		}
 
 		Publisher->Publish(Msg);
 		return true;

@@ -121,7 +121,7 @@ void UROS2TFPublisherComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 			FRotator Rot = SodaWheel->RestingRotation;
 			Rot.Pitch += SodaWheel->Pitch / M_PI * 180;
 			Rot.Yaw += SodaWheel->Steer / M_PI * 180;
-			const FVector Loc = SodaWheel->RestingLocation + FVector(0, 0, SodaWheel->SuspensionOffset);
+			const FVector Loc = SodaWheel->GetWheelLocation();
 			const auto Quat = FRotator(Rot.Pitch, -Rot.Yaw, -Rot.Roll).Quaternion();
 
 			auto& Transform = Msg.transforms[i + SceneComponentsToPublish.Num()];

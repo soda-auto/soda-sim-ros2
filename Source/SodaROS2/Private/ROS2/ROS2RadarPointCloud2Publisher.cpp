@@ -13,6 +13,13 @@ bool UROS2RadarPointCloud2Publisher::Advertise(UVehicleBaseComponent* Parent)
 {
     Shutdown();
 
+    URadarSensor* RadarSensor = Cast<URadarSensor>(Parent);
+    if (RadarSensor && RadarSensor->GetRadarMode() == ERadarMode::ObjectMode)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("UROS2RadarPointCloud2Publisher: Radar is in ObjectMode. Publisher will not be created."));
+        return false;
+    }
+
     Msg.fields.resize(3);
     Msg.fields[0].name = "x";
     Msg.fields[0].offset = 0;

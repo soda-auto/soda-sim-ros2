@@ -14,16 +14,16 @@ class SODAROS2_API UROS2ImuPublisher : public UGenericNavPublisher
 	GENERATED_UCLASS_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROSLidarPublisher, SaveGame, meta = (EditInRuntime, ReactivateComponent))
-	FString NodeNamespace = "SodaSim";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime, ReactivateComponent))
+	FString NodeName = DEFAULT_ROS2_NODE_NAME;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROSLidarPublisher, SaveGame, meta = (EditInRuntime, ReactivateComponent))
-	FString Topic = "/vehicle/imu";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime, ReactivateComponent))
+	FROS2TopicSetup TopicSetup{ TOPIC_SENSOR_TEMPLATE};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROSLidarPublisher, SaveGame, meta = (DisplayName = "QoS", EditInRuntime, ReactivateComponent))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROSLiROS2darPublisher, SaveGame, meta = (DisplayName = "QoS", EditInRuntime, ReactivateComponent))
 	FQoS QoS;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROSLidarPublisher, SaveGame, meta = (EditInRuntime))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime))
 	FString FrameID = TEXT("base_link");
 
 public:
@@ -37,5 +37,6 @@ private:
 	TSharedPtr<ros2::TPublisher<sensor_msgs::msg::Imu>> Publisher;
 	sensor_msgs::msg::Imu Msg;
 	UVehicleBaseComponent* Parent = nullptr;
+	FString FormatedTopic;
 };
 

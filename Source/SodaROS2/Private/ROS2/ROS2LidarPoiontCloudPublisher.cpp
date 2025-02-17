@@ -12,7 +12,10 @@ UROS2LidarPoiontCloudPublisher::UROS2LidarPoiontCloudPublisher(const FObjectInit
 bool UROS2LidarPoiontCloudPublisher::Advertise(UVehicleBaseComponent* Parent)
 {
 	Shutdown();
-	Publisher = FSodaROS2Module::Get().CreatePublisher<sensor_msgs::msg::PointCloud>(NodeNamespace, Topic, QoS);
+
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Publisher = ros2::TPublisher<sensor_msgs::msg::PointCloud>::Create(NodeName, FormatedTopic, QoS);
+
 	return Publisher.IsValid();
 }
 
@@ -57,5 +60,5 @@ bool UROS2LidarPoiontCloudPublisher::IsOk() const
 
 FString UROS2LidarPoiontCloudPublisher::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }

@@ -11,7 +11,8 @@ UROS2CameraPublisher::UROS2CameraPublisher(const FObjectInitializer& ObjectIniti
 
 bool UROS2CameraPublisher::Advertise(UVehicleBaseComponent* Parent)
 {
-	Publisher = FSodaROS2Module::Get().CreatePublisher<sensor_msgs::msg::Image>(NodeNamespace, Topic, QoS);
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Publisher = ros2::TPublisher<sensor_msgs::msg::Image>::Create(NodeName, FormatedTopic, QoS);
 	return Publisher.IsValid();
 }
 
@@ -73,5 +74,5 @@ bool UROS2CameraPublisher::IsOk() const
 
 FString UROS2CameraPublisher::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }

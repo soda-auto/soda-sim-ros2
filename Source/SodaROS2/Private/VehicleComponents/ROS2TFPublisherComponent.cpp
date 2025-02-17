@@ -75,7 +75,9 @@ bool UROS2TFPublisherComponent::OnActivateVehicleComponent()
 		Msg.transforms[SceneComponentsToPublish.Num() + i].child_frame_id = TCHAR_TO_UTF8(*WheelComponentsToPublish[i]->GetName());
 	}
 
-	Publisher = FSodaROS2Module::Get().CreatePublisher<tf2_msgs::msg::TFMessage>(NodeNamespace, Topic, QoS);
+	FormatedTopic = TopicSetup.GetFormatedTopic(GetName());
+	Publisher = ros2::TPublisher<tf2_msgs::msg::TFMessage>::Create(NodeName, FormatedTopic, QoS);
+
 	return Publisher.IsValid();
 }
 
@@ -150,7 +152,7 @@ void UROS2TFPublisherComponent::DrawDebug(UCanvas* Canvas, float& YL, float& YPo
 
 FString UROS2TFPublisherComponent::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }
 
 void UROS2TFPublisherComponent::Shutdown()

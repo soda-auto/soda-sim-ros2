@@ -19,16 +19,16 @@ class SODAROS2_API UROS2AckermannControl : public UGenericWheeledVehicleControlL
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2AckermannControl, SaveGame, meta = (EditInRuntime, ReactivateComponent))
-	FString NodeNamespace = "SodaSim";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime, ReactivateComponent))
+	FString NodeName = DEFAULT_ROS2_NODE_NAME;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2AckermannControl, SaveGame, meta = (EditInRuntime, ReactivateComponent))
-	FString Topic = "/vehicle/vehcile_control";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime, ReactivateComponent))
+	FROS2TopicSetup TopicSetup{ TEXT("{namespace}/control/{dev_name}") };
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2AckermannControl, SaveGame, meta = (DisplayName="QoS", EditInRuntime, ReactivateComponent))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (DisplayName="QoS", EditInRuntime, ReactivateComponent))
 	FQoS QoS;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2AckermannControl, SaveGame, meta = (EditInRuntime))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime))
 	FString FrameID = TEXT("base_link");
 
 public:
@@ -44,6 +44,7 @@ protected:
 	TSharedPtr<ros2::TSubscription<ackermann_msgs::msg::AckermannDriveStamped>> Subscription;
 	ackermann_msgs::msg::AckermannDriveStamped Msg;
 	TTimestamp RecvTimestamp;
+	FString FormatedTopic;
 };
 
 

@@ -17,7 +17,9 @@ bool UROS2NavSatFixPublisher::Advertise(UVehicleBaseComponent* InParent)
 	check(InParent);
 	Parent = InParent;
 
-	Publisher = FSodaROS2Module::Get().CreatePublisher<sensor_msgs::msg::NavSatFix>(NodeNamespace, Topic, QoS);
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Publisher = ros2::TPublisher<sensor_msgs::msg::NavSatFix>::Create(NodeName, FormatedTopic, QoS);
+
 	return Publisher.IsValid();
 }
 
@@ -71,5 +73,5 @@ bool UROS2NavSatFixPublisher::IsOk() const
 
 FString UROS2NavSatFixPublisher::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }

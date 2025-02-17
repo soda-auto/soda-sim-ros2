@@ -10,9 +10,9 @@ bool UROS2AckermannControl::StartListen(UVehicleBaseComponent* Parent)
 {
 	StopListen();
 
-	Subscription = FSodaROS2Module::Get().CreateSubscription<ackermann_msgs::msg::AckermannDriveStamped>(
-		NodeNamespace, Topic, QoS,
-		[this](const std::shared_ptr<ackermann_msgs::msg::AckermannDriveStamped> InMsg) {
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Subscription = ros2::TSubscription<ackermann_msgs::msg::AckermannDriveStamped>::Create(NodeName, FormatedTopic, QoS,
+		[this](const std::shared_ptr<ackermann_msgs::msg::AckermannDriveStamped> InMsg, const rmw_message_info_t& /*Info*/) {
 			Msg = *InMsg;
 			RecvTimestamp = soda::Now();
 		});
@@ -36,8 +36,8 @@ bool UROS2AckermannControl::GetControl(soda::FGenericWheeledVehiclControl& Contr
 	Control.TargetSpeedReq = Msg.drive.speed * 100;
 	Control.SteeringAngleVelocity = Msg.drive.steering_angle_velocity;
 	Control.bGearIsSet = false;
-	Control.bTargetSpeedIsSet = FMath::IsNearlyZero(Msg.drive.speed);
-	Control.bSteeringAngleVelocitySet = FMath::IsNearlyZero(Msg.drive.steering_angle_velocity);
+	Control.bTargetSpeedIsSet = !FMath::IsNearlyZero(Msg.drive.speed);
+	Control.bSteeringAngleVelocitySet = !FMath::IsNearlyZero(Msg.drive.steering_angle_velocity);
 	Control.SteerReqMode = soda::FGenericWheeledVehiclControl::ESteerReqMode::ByAngle;
 	Control.DriveEffortReqMode = soda::FGenericWheeledVehiclControl::EDriveEffortReqMode::ByAcc;
 	Control.Timestamp = RecvTimestamp;
@@ -47,7 +47,7 @@ bool UROS2AckermannControl::GetControl(soda::FGenericWheeledVehiclControl& Contr
 
 FString UROS2AckermannControl::GetRemark() const
 {
-	return Topic;
+	return Subscription.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }
 
 void UROS2AckermannControl::DrawDebug(UCanvas* Canvas, float& YL, float& YPos)

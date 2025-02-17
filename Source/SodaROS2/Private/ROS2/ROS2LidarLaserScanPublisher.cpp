@@ -13,7 +13,10 @@ bool UROS2LidarLaserScanPublisher::Advertise(UVehicleBaseComponent* Parent)
 {
 	Shutdown();
 	bScanIsValid = true;
-	Publisher = FSodaROS2Module::Get().CreatePublisher<sensor_msgs::msg::LaserScan>(NodeNamespace, Topic, QoS);
+
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Publisher = ros2::TPublisher<sensor_msgs::msg::LaserScan>::Create(NodeName, FormatedTopic, QoS);
+
 	return Publisher.IsValid();
 }
 
@@ -32,7 +35,7 @@ bool UROS2LidarLaserScanPublisher::Publish(float DeltaTime, const FSensorDataHea
 
 		if (!bScanIsValid)
 		{
-			UE_LOG(LogSoda, Error, TEXT("UROS2LidarLaserScanPublisher::Publish(%s): The size of scan is invalid "), *Topic);
+			UE_LOG(LogSoda, Error, TEXT("UROS2LidarLaserScanPublisher::Publish(%s): The size of scan is invalid "), *FormatedTopic);
 			return false;
 		}
 
@@ -71,5 +74,5 @@ bool UROS2LidarLaserScanPublisher::IsOk() const
 
 FString UROS2LidarLaserScanPublisher::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }

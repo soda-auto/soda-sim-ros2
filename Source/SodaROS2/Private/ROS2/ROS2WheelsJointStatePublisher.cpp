@@ -35,7 +35,9 @@ bool UROS2WheelsJointStatePublisher::Advertise(UVehicleBaseComponent* InParent)
 	Msg.velocity.resize(4 * 3);
 	Msg.effort.resize(4 * 3);
 
-	Publisher = FSodaROS2Module::Get().CreatePublisher<sensor_msgs::msg::JointState>(NodeNamespace, Topic, QoS);
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Publisher = ros2::TPublisher<sensor_msgs::msg::JointState>::Create(NodeName, FormatedTopic, QoS);
+
 	return Publisher.IsValid();
 }
 
@@ -91,5 +93,5 @@ bool UROS2WheelsJointStatePublisher::IsOk() const
 
 FString UROS2WheelsJointStatePublisher::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }

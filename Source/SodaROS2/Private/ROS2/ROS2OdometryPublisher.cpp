@@ -17,7 +17,9 @@ bool UROS2OdometryPublisher::Advertise(UVehicleBaseComponent* InParent)
 	check(InParent);
 	Parent = InParent;
 
-	Publisher = FSodaROS2Module::Get().CreatePublisher<nav_msgs::msg::Odometry>(NodeNamespace, Topic, QoS);
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Publisher = ros2::TPublisher<nav_msgs::msg::Odometry>::Create(NodeName, FormatedTopic, QoS);
+
 	return Publisher.IsValid();
 }
 
@@ -85,5 +87,5 @@ bool UROS2OdometryPublisher::IsOk() const
 
 FString UROS2OdometryPublisher::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }

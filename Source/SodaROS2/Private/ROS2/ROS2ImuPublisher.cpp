@@ -17,7 +17,9 @@ bool UROS2ImuPublisher::Advertise(UVehicleBaseComponent* InParent)
 	check(InParent);
 	Parent = InParent;
 
-	Publisher = FSodaROS2Module::Get().CreatePublisher<sensor_msgs::msg::Imu>(NodeNamespace, Topic, QoS);
+	FormatedTopic = TopicSetup.GetFormatedTopic(Parent->GetName());
+	Publisher = ros2::TPublisher<sensor_msgs::msg::Imu>::Create(NodeName, FormatedTopic, QoS);
+
 	return Publisher.IsValid();
 }
 
@@ -80,5 +82,5 @@ bool UROS2ImuPublisher::IsOk() const
 
 FString UROS2ImuPublisher::GetRemark() const
 {
-	return Topic;
+	return Publisher.IsValid() ? FormatedTopic : TopicSetup.Topic;
 }

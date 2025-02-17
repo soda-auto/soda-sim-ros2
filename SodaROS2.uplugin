@@ -23,6 +23,11 @@
 		{
 			"Name": "SodaSim",
 			"Enabled": true
+		},
+		{
+			"Name": "ROSHumble",
+			"Enabled": true
 		}
+		
 	]
 }

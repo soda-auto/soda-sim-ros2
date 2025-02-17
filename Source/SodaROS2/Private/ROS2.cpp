@@ -5,12 +5,21 @@
 #include "Interfaces/IPluginManager.h"
 #include "rcl/logging.h"
 
+#if PLATFORM_WINDOWS
+#include "Windows/AllowWindowsPlatformTypes.h"
+#include <libloaderapi.h>
+#include "Windows/HideWindowsPlatformTypes.h"
+#include "Windows/WindowsPlatformMisc.h"
+#endif
+
+
 static void ROS2OutputHandler(const rcutils_log_location_t* location, int severity, const char* name, rcutils_time_point_value_t timestamp, const char* format, va_list* args)
 {
 	//rclcpp_logging_output_handler(location, severity, name, timestamp, format, args);
 	//rcl_logging_multiple_output_handler( location, severity, name, timestamp, format, args);
 
-	try {
+	try 
+	{
 		//std::shared_ptr<std::recursive_mutex> logging_mutex;
 		//logging_mutex = get_global_logging_mutex();
 		//std::lock_guard<std::recursive_mutex> guard(*logging_mutex);
@@ -20,7 +29,8 @@ static void ROS2OutputHandler(const rcutils_log_location_t* location, int severi
 		RCUTILS_SAFE_FWRITE_TO_STDERR(ex.what());
 		RCUTILS_SAFE_FWRITE_TO_STDERR("\n");
 	}
-	catch (...) {
+	catch (...) 
+	{
 		RCUTILS_SAFE_FWRITE_TO_STDERR("failed to take global rclcpp logging mutex\n");
 	}
 
@@ -50,38 +60,93 @@ static void ROS2OutputHandler(const rcutils_log_location_t* location, int severi
 	}
 }
 
-FString FSodaROS2Module::AmentPrefixPath = "";
+FString FROS2TopicSetup::GetFormatedTopic(const FString& ComponentName) const
+{
+	FString FormatedTopic = Topic;
+
+	if (bOverrideNamespace)
+	{
+		FormatedTopic = FormatedTopic.Replace(TEXT("{namespace}"), *Namespace, ESearchCase::CaseSensitive);
+	}
+
+	switch (DevSubstitution)
+	{
+	case ETopicDevNameSbstitution::Skip:
+		break;
+	case ETopicDevNameSbstitution::ComponentName:
+		FormatedTopic = FormatedTopic.Replace(TEXT("{dev_name}"), *ComponentName, ESearchCase::CaseSensitive);
+		break;
+	case ETopicDevNameSbstitution::Custom:
+		FormatedTopic = FormatedTopic.Replace(TEXT("{dev_name}"), *DevName, ESearchCase::CaseSensitive);
+		break;
+	}
+
+	FormatedTopic = FormatedTopic.Replace(TEXT("{signal_name}"), *SignalName, ESearchCase::CaseSensitive);
+
+	return FormatedTopic;
+}
+
+
+namespace ros2
+{
+	void AddPathToEnv(const FString& Path, const FString& EnvName)
+	{
+		FString PathEnv = FPlatformMisc::GetEnvironmentVariable(*EnvName);
+		TArray<FString> PathArray;
+		PathEnv.ParseIntoArray(PathArray, FPlatformMisc::GetPathVarDelimiter());
+		if (PathArray.Num() > 0)
+		{
+			for (auto It : PathArray)
+			{
+				if (FPaths::IsSamePath(Path, It))
+				{
+					return;
+				}
+			}
+			PathEnv = Path + FPlatformMisc::GetPathVarDelimiter() + PathEnv;
+		}
+		else
+		{
+			PathEnv = Path;
+		}
+
+		FPlatformMisc::SetEnvironmentVar(*EnvName, *PathEnv);
+	}
+}
+
+FString FSodaROS2Module::ROSRootPath = "";
 
 void FSodaROS2Module::StartupModule()
 {
-	FString ROS2PluginDir;
-
-	if (FPlatformMisc::GetEnvironmentVariable(TEXT("AMENT_PREFIX_PATH")).IsEmpty())
-	{
-		ROS2PluginDir = FPaths::ConvertRelativePathToFull(IPluginManager::Get().FindPlugin(TEXT("SodaROS2"))->GetBaseDir());
+	FString ROSModulePath = IPluginManager::Get().FindPlugin(TEXT("ROSHumble"))->GetBaseDir() / TEXT("Source") / TEXT("ROSHumble");
 #if PLATFORM_WINDOWS
-		FPlatformMisc::SetEnvironmentVar(TEXT("AMENT_PREFIX_PATH"), *FPaths::Combine(ROS2PluginDir, TEXT("/ros2-windows")));
+	ROSRootPath = FPaths::ConvertRelativePathToFull(ROSModulePath / TEXT("Win64"));
 #elif PLATFORM_LINUX
-		FPlatformMisc::SetEnvironmentVar(TEXT("AMENT_PREFIX_PATH"), *FPaths::Combine(ROS2PluginDir, TEXT("/ros2-linux")));
+	ROSRootPath = FPaths::ConvertRelativePathToFull(ROSModulePath / TEXT("Linux"));
 #endif
-	}
 
-	AmentPrefixPath = FPlatformMisc::GetEnvironmentVariable(TEXT("AMENT_PREFIX_PATH"));
+	check(FPaths::DirectoryExists(ROSRootPath));
 
-	UE_LOG(LogROS2, Warning, TEXT("FSodaROS2Module::StartupModule(), AMENT_PREFIX_PATH=%s;"), *AmentPrefixPath);
+	ros2::AddPathToEnv(ROSRootPath, TEXT("AMENT_PREFIX_PATH"));
+	UE_LOG(LogROS2, Log, TEXT("FSodaROS2Module::StartupModule(); AMENT_PREFIX_PATH = %s"), *FPlatformMisc::GetEnvironmentVariable(TEXT("AMENT_PREFIX_PATH")));
 
 	if (IsRunningCommandlet())
 	{
 		return;
 	}
 
-	FROS2DllDirectoryGuard ROSGuard;
-
 #if PLATFORM_WINDOWS
+
+	FString ROS2Bin = ROSRootPath / TEXT("bin");
+
+	ros2::AddPathToEnv(ROS2Bin, TEXT("Path"));
+
+	UE_LOG(LogROS2, Log, TEXT("FSodaROS2Module::StartupModule(); Path = %s"), *FPlatformMisc::GetEnvironmentVariable(TEXT("Path")));
+
 	TArray<FString> DllPaths =
 	{
-		FPaths::Combine(ROS2PluginDir, "ros2-ue-wrapper", "install_win64", "Bin" , "ros2_ue_wrapper.dll"),
-		FPaths::Combine(ROSGuard.GetBinDir(),  "rcl.dll")
+		ROS2Bin / TEXT("rcl.dll"),
+		ROS2Bin / TEXT("ros2_ue_wrapper.dll"),
 	};
 
 	for (auto& It : DllPaths)
@@ -89,7 +154,7 @@ void FSodaROS2Module::StartupModule()
 		void* LibHandle = FPlatformProcess::GetDllHandle(*It);
 		if (LibHandle == nullptr)
 		{
-			UE_LOG(LogROS2, Fatal, TEXT("FSodaROS2Module::StartupModule(): Failed to load required library %s. Plug-in will not be functional."), *It);
+			UE_LOG(LogROS2, Fatal, TEXT("FSodaROS2Module::StartupModule()? Failed to load required library %s. Plug-in will not be functional."), *It);
 		}
 		else
 		{
@@ -98,14 +163,14 @@ void FSodaROS2Module::StartupModule()
 	}
 #endif
 
-	//try
-	//{
-	ros2_ue_wrapper::Init(false, ROS2OutputHandler);
-	//}
-	//catch (std::exception& e)
-	//{
-		//UE_LOG(LogROS2, Error, TEXT("FSodaROS2Module::StartupModule(); rclcpp::init() faild: %s"), UTF8_TO_TCHAR(e.what()));
-	//}
+	try
+	{
+		ros2_ue_wrapper::Init(false, ROS2OutputHandler);
+	}
+	catch (std::exception& e)
+	{
+		UE_LOG(LogROS2, Fatal, TEXT("FSodaROS2Module::StartupModule(); rclcpp::init() faild: %s"), UTF8_TO_TCHAR(e.what()));
+	}
 
 	ros2_ue_wrapper::SetLogLevel("rclcpp", RCUTILS_LOG_SEVERITY_DEBUG);
 	ros2_ue_wrapper::SetLogLevel("rcl", RCUTILS_LOG_SEVERITY_DEBUG);
@@ -163,24 +228,33 @@ void FSodaROS2Module::StopExecutor()
 	Executor.Reset();
 }
 
-TSharedPtr<ros2_ue_wrapper::FNode> FSodaROS2Module::RegistreNode(FName Namespace)
+TSharedRef<ros2_ue_wrapper::FNode> FSodaROS2Module::RegistreNode(FName Namespace)
 {
 	if (auto* FoundNode = Nodes.Find(Namespace))
 	{
-		return *FoundNode;
+		return FoundNode->ToSharedRef();
 	}
 	else
 	{
-		FROS2DllDirectoryGuard Ros2Dir;
 		UE_LOG(LogROS2, Log, TEXT("FSodaROS2Module::RegistreNode(); Creating new ROS2 node: %s"), *Namespace.ToString());
-		TSharedPtr<ros2_ue_wrapper::FNode> NewNode = MakeShared<ros2_ue_wrapper::FNode>(TCHAR_TO_UTF8(*Namespace.ToString()));
+
+		TSharedPtr<ros2_ue_wrapper::FNode> NewNode;
+		try
+		{
+			NewNode = MakeShared<ros2_ue_wrapper::FNode>(TCHAR_TO_UTF8(*Namespace.ToString()), TCHAR_TO_UTF8(*Namespace.ToString()));
+		}
+		catch (std::exception& e)
+		{
+			UE_LOG(LogROS2, Fatal, TEXT("FSodaROS2Module::RegistreNode(%s); what(): %s"), *Namespace.ToString(), UTF8_TO_TCHAR(e.what()));
+		}
+
 		//std::lock_guard guard(Mutex);
 		Nodes.Add(Namespace, NewNode);
 
 		StopExecutor();
 		StartExecutor();
 
-		return NewNode;
+		return NewNode.ToSharedRef();
 	}
 }
 
@@ -218,7 +292,7 @@ bool FSodaROS2Module::CheckUnregisterNode(FName Namespace)
 	return false;
 }
 
-bool FSodaROS2Module::CheckUnregisterNode(TSharedPtr<ros2_ue_wrapper::FNode> Node)
+bool FSodaROS2Module::CheckUnregisterNode(TSharedRef<ros2_ue_wrapper::FNode> Node)
 {
 	if (auto * Namespace = Nodes.FindKey(Node))
 	{
@@ -235,20 +309,6 @@ bool FSodaROS2Module::CheckUnregisterNode(TSharedPtr<ros2_ue_wrapper::FNode> Nod
 
 	return false;
 }
-
-//------------------------------------------------------------------------
-
-FROS2DllDirectoryGuard::FROS2DllDirectoryGuard()
-{
-	BinDir = FSodaROS2Module::GetAmentPrefixPath() / TEXT("bin");
-	FPlatformProcess::PushDllDirectory(*BinDir);
-}
-
-FROS2DllDirectoryGuard::~FROS2DllDirectoryGuard()
-{
-	FPlatformProcess::PopDllDirectory(*BinDir);
-}
-
 
 //------------------------------------------------------------------------
 ros2_ue_wrapper::FQoS FQoS::Create() const

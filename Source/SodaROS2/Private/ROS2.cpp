@@ -147,6 +147,12 @@ void FSodaROS2Module::StartupModule()
 	{
 		ROS2Bin / TEXT("rcl.dll"),
 		ROS2Bin / TEXT("ros2_ue_wrapper.dll"),
+		ROS2Bin / TEXT("ros2_ue_wrapper_std_msgs.dll"),
+		ROS2Bin / TEXT("ros2_ue_wrapper_sensor_msgs.dll"),
+		ROS2Bin / TEXT("ros2_ue_wrapper_nav_msgs.dll"),
+		ROS2Bin / TEXT("ros2_ue_wrapper_tf2_msgs.dll"),
+		ROS2Bin / TEXT("ros2_ue_wrapper_ackermann_msgs.dll"),
+		ROS2Bin / TEXT("ros2_ue_wrapper_soda_msgs.dll"),
 	};
 
 	for (auto& It : DllPaths)

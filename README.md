@@ -1,10 +1,8 @@
 # SODA.Sim ROS2 Plugin 
-![SodaSim](Docs/img/promo.png)
-This repository is a plugin for UnrealEngine and an extension of the [SODA.Sim](https://github.com/soda-auto/SodaSim) plugin to support ROS2 capabilities the for SODA.Sim.
-This plugin includes all the necessary precompiled ROS2 dependencies (ROS2 workspace) for windows and linux and does not require any other external ROS2 dependencies.  
+This repository is a plugin for UnrealEngine and an extension of the [SODA.Sim](https://github.com/soda-auto/SodaSim) to support ROS2 capabilities. 
 Current version of supported ROS2 is **Humble**.  
   
-> [!WARNING]
+> [!WARNING]  
 > For the Linux version supported only FastDDS RMW.
 
 ## Installing
@@ -25,10 +23,9 @@ Current version of supported ROS2 is **Humble**.
  - **Generic Nav Sensor Publisher** using [nav_msgs/msg/Imu](https://docs.ros2.org/latest/api/sensor_msgs/msg/Imu.html). 
  - **Generic Wheeled Vehicle Sensor Publisher** using [sensor_msgs/msg/JointState ](https://docs.ros2.org/latest/api/sensor_msgs/msg/JointState.html). 
  - **Generic Radar Sensor Publisher** using [sensor_msgs/msg/PointCloud2](https://docs.ros2.org/latest/api/sensor_msgs/msg/PointCloud2.html). 
- - **TF publisher sensor** using [tf2_msgs/TFMessage.msg](https://docs.ros.org/en/melodic/api/tf2_msgs/html/msg/TFMessage.html). 
+ - **TF publisher Sensor** using [tf2_msgs/TFMessage.msg](https://docs.ros.org/en/melodic/api/tf2_msgs/html/msg/TFMessage.html). 
  - **Generic Wheeled Vehicle Control**  using [ackermann_msgs/msg/AckermannDriveStamped](https://github.com/ros-drivers/ackermann_msgs/blob/ros2/msg/AckermannDriveStamped.msg).
- - **IOBus** 
- - **CANDev**
+ - **CANDev Component**  
  - **Shaft Adapter Component**
  - **Wheel Interface Component**
  
@@ -38,8 +35,7 @@ Current version of supported ROS2 is **Humble**.
  - Add the fully equipped turtlebot model.
  - Add custom messages to control SODA.Sim via ROS2.
  - Support the time sync messages
- - Add LIN/Serial virtual hardware interfaces
- - Suggest to us what we're missed ?
+ - Add LIN and Serial virtual hardware interfaces
    
 ## Copyright and License
 Copyright © 2023 SODA.AUTO UK LTD. ALL RIGHTS RESERVED.  

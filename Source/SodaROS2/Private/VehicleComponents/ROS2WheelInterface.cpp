@@ -47,7 +47,7 @@ UROS2WheelInterfaceComponent::UROS2WheelInterfaceComponent(const FObjectInitiali
 {
 	GUI.Category = TEXT("Vehicle Mechanicles");
 	GUI.IcanName = TEXT("SodaIcons.Motor");
-	GUI.ComponentNameOverride = TEXT("ROS2 Shaft Adapter");
+	GUI.ComponentNameOverride = TEXT("ROS2 Wheels");
 	GUI.bIsPresentInAddMenu = true;
 
 	Common.Activation = EVehicleComponentActivation::OnStartScenario;

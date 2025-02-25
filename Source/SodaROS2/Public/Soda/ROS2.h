@@ -232,7 +232,7 @@ namespace ros2
 			}
 			catch (std::exception& e)
 			{
-				soda::ShowNotificationAndLog(ENotificationLevel::Error, 5.0, ANSI_TO_TCHAR(__FUNCTION__), TEXT("Can't create publisher with topic name: \"%s\". what(): %s"), *Topic, UTF8_TO_TCHAR(e.what()));
+				SHOW_NOTIFICATION(Error, 5.0, TEXT("Can't create publisher with topic name: \"%s\". what(): %s"), *Topic, UTF8_TO_TCHAR(e.what()));
 			}
 			return nullptr;
 		}
@@ -272,7 +272,7 @@ namespace ros2
 			}
 			catch (std::exception& e)
 			{
-				soda::ShowNotificationAndLog(ENotificationLevel::Error, 5.0, ANSI_TO_TCHAR(__FUNCTION__), TEXT("Can't create subscription with topic name: \"%s\". what(): %s"), *Topic, UTF8_TO_TCHAR(e.what()));
+				SHOW_NOTIFICATION(Error, 5.0, TEXT("Can't create subscription with topic name: \"%s\". what(): %s"), *Topic, UTF8_TO_TCHAR(e.what()));
 			}
 			return nullptr;
 		}

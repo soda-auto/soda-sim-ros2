@@ -2,25 +2,26 @@ using System;
 using System.IO;
 using UnrealBuildTool;
 
+
+
 public class SodaROS2 : ModuleRules
 {
     public SodaROS2(ReadOnlyTargetRules Target) : base(Target)
 	{
-
+		
         PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"Core",
 				"CoreUObject",
 				"Engine",
-                //"SodaROS2Common",
                 "UnrealSoda",
                 "RuntimeEditor",
-				"ROSHumble"
+                "ROSHumble" // "ROSHumble" or "ROSJazzy"
 			}
 		);
 
-		PrivateDependencyModuleNames.AddRange(
+        PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
                 "Projects",

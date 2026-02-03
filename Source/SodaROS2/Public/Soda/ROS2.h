@@ -301,10 +301,38 @@ namespace ros2
 	};
 
 	/**
+ *  FPubliserSignalBase
+ */
+
+	class FPubliserSignalBase
+	{
+	public:
+		FPubliserSignalBase() = default;
+		virtual ~FPubliserSignalBase() {};
+
+		virtual void Stop() {};
+	};
+
+	/**
+	*  FSubscriberSignalBase
+	*/
+
+	class FSubscriberSignalBase
+	{
+	public:
+		FSubscriberSignalBase() = default;
+		virtual ~FSubscriberSignalBase() {};
+
+		virtual void Stop() {};
+
+	};
+
+
+	/**
 	 *  TPublisherSignal
 	 */
 	template<typename MessageT>
-	class TPublisherSignal
+	class TPublisherSignal : public FPubliserSignalBase
 	{
 	public:
 		using TDataTyp = MessageT::_data_type;
@@ -357,7 +385,7 @@ namespace ros2
 	 *  TSubscriptionSignal
 	 */
 	template<typename MessageT>
-	class TSubscriptionSignal
+	class TSubscriptionSignal : public FSubscriberSignalBase
 	{
 	public:
 		using TDataTyp = MessageT::_data_type;

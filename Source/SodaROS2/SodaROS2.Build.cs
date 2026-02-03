@@ -17,6 +17,7 @@ public class SodaROS2 : ModuleRules
 				"Engine",
                 "UnrealSoda",
                 "RuntimeEditor",
+                "FmiLibAPI",
                 "ROSJazzy" // "ROSHumble" or "ROSJazzy"
 			}
 		);

@@ -9,61 +9,62 @@
 #include "std_msgs/msg/int32.hpp"
 #include "std_msgs/msg/bool.hpp"
 
+#if PLATFORM_WINDOWS
 #include "Windows/AllowWindowsPlatformTypes.h" 
 #include <fmilib.h>
 #include "Windows/HideWindowsPlatformTypes.h"
+#endif
 
 
 #include "FMIAdapter.generated.h"
 
-	/**
-	 *  FPubliserSignalBase
-	*/
+/**
+ *  FPubliserSignalBase
+*/
 UENUM(BlueprintType)
 enum class ERosMessageTyp : uint8 {
 	Int      UMETA(DisplayName = "Int"),
 	Float      UMETA(DisplayName = "Float"),
 	Bool      UMETA(DisplayName = "Bool"),
-
 };
 
+/**
+ * FFMUPublisher
+ */
+struct FFMUPublisher
+{
+	ERosMessageTyp MessageTyp;
+	FString VarName;
+	TSharedPtr<ros2::FPubliserSignalBase> Publisher;
+};
 
-	struct FFMUPublisher
-	{
+/**
+ * FFMUSubscriber
+ */
+struct FFMUSubscriber
+{
+	ERosMessageTyp MessageTyp;
+	FString VarName;
+	TSharedPtr<ros2::FSubscriberSignalBase> Subscriber;
+};
 
+/**
+ * FFmuParam
+ */
+USTRUCT(BlueprintType)
+struct FFmuParam
+{
+	GENERATED_BODY()
 
-		ERosMessageTyp MessageTyp;
-		FString VarName;
-		TSharedPtr<ros2::FPubliserSignalBase> Publisher;
-	};
+public:
 
-	struct FFMUSubscriber
-	{
-
-
-		ERosMessageTyp MessageTyp;
-		FString VarName;
-		TSharedPtr<ros2::FSubscriberSignalBase> Subscriber;
-	};
-
-
-	USTRUCT(BlueprintType)
-		struct FFmuParam
-	{
-		GENERATED_BODY()
-
-	public:
-	
-		UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, meta = (EditInRuntime))
-		FName Name;
-
-		UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, meta = (EditInRuntime))
-		float Value = 0.0;
-
-		UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, meta = (EditInRuntime))
-		ERosMessageTyp Type = ERosMessageTyp::Bool;
-
-	};
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, meta = (EditInRuntime))
+	FName Name;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, meta = (EditInRuntime))
+	float Value = 0.0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, SaveGame, meta = (EditInRuntime))
+	ERosMessageTyp Type = ERosMessageTyp::Bool;
+};
 
 
 
@@ -80,7 +81,6 @@ class SODAROS2_API UFMIAdapterComponent
 
 public:
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime, ReactivateComponent))
 	FString NodeName = DEFAULT_ROS2_NODE_NAME;
 
@@ -88,7 +88,7 @@ public:
 	FString FmuPath;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime, ReactivateComponent))
-	float  step_size_ = 0.01;
+	float StepSize = 0.01;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (EditInRuntime))
 	TArray<FFmuParam> Parameters;
@@ -100,27 +100,28 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (DisplayName = "Pub QoS", EditInRuntime, ReactivateComponent))
 	FQoS PubQoS{};
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ROS2, SaveGame, meta = (DisplayName = "Sub QoS", EditInRuntime, ReactivateComponent))
 	FQoS SubQoS{};
+
 	UFUNCTION(CallInEditor, Category = LoadFMU, meta = (DisplayName = "Specify path to FMU model", CallInRuntime))
 	void SpecifyFmuModel();
 
 public:
 	virtual bool ConfigureSignal(const FROS2TopicSetup& Setup) override;
 
-
-	void setup_fmu();
-	void initialize_parameters_and_topics();
-	void setup_publishers_and_subscribers();
-	void run_step();
-	void publish_outputs();
+#if PLATFORM_WINDOWS
+	void InitializeFMU();
+	void InitializeParametersAndTopics();
+	void SetupPublishersAndSubscribers();
+	void RunSimulationStep();
+	void PublisOutputs();
 	void UpdateInputs();
-	void RunNode();
+	void PerformNodeSimulation();
 
-	void cleanup();
-	void handle_input(const FString& variable_name, double value);
-	FString normalize_topic_name(const std::string& name);
+	void CleanUp();
+	void HandleInput(const FString& VariableName, double value);
+#endif
+
 
 protected:
 	virtual bool OnActivateVehicleComponent() override;
@@ -135,20 +136,18 @@ protected:
 
 private:
 
-    double current_time_;
+#if PLATFORM_WINDOWS
+    double CurrentTime;
     std::string unpacked_dir_;
-    fmi2_import_t *fmu_;
-    fmi_import_context_t *context_;
-    jm_callbacks callbacks;
-    fmi_version_enu_t version;
-    const char* tmpPath;
-    fmi2_callback_functions_t callBackFunctions;
+    fmi2_import_t *FmuModel;
+    fmi_import_context_t *FmuContext;
+    jm_callbacks FmuCallbacks;
+    fmi_version_enu_t FmiVersion;
+    const char* FmiTmpPath;
+    fmi2_callback_functions_t CallBackFunctions;
 
-	    static void importlogger(jm_callbacks* c, jm_string module, jm_log_level_enu_t log_level, jm_string message) 
-		{
-
-		}
-
+	static void importlogger(jm_callbacks* c, jm_string module, jm_log_level_enu_t log_level, jm_string message) {};
+#endif
 };
 
 

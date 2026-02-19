@@ -11,7 +11,22 @@
 #include "Misc/OutputDeviceDebug.h"
 #include "DesktopPlatformModule.h"
 #include "Engine/Engine.h"
+#include "Interfaces/IPluginManager.h"
 #include "Algo/Find.h"
+
+
+FString normalize_topic_name(const std::string& name)
+{
+	std::string normalized_name = name;
+	std::replace(normalized_name.begin(), normalized_name.end(), '.', '_');
+	std::replace(normalized_name.begin(), normalized_name.end(), '[', '_');
+	std::replace(normalized_name.begin(), normalized_name.end(), ']', '_');
+	std::replace(normalized_name.begin(), normalized_name.end(), '{', '_');
+	std::replace(normalized_name.begin(), normalized_name.end(), '}', '_');
+	return  FString(normalized_name.c_str());;
+}
+
+
 
 UFMIAdapterComponent::UFMIAdapterComponent(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -27,6 +42,10 @@ UFMIAdapterComponent::UFMIAdapterComponent(const FObjectInitializer& ObjectIniti
 	TickData.bAllowVehiclePostDeferredPhysTick = true;
 }
 
+
+
+#if PLATFORM_WINDOWS
+
 bool UFMIAdapterComponent::OnActivateVehicleComponent()
 {
 	if (!Super::OnActivateVehicleComponent())
@@ -34,10 +53,8 @@ bool UFMIAdapterComponent::OnActivateVehicleComponent()
 		return false;
 	}
 
-
-	setup_fmu();
-	setup_publishers_and_subscribers();
-
+	InitializeFMU();
+	
 
 	return true;
 }
@@ -52,7 +69,7 @@ void UFMIAdapterComponent::PostPhysicSimulationDeferred(float DeltaTime, const F
 		return;
 	}
 
-	RunNode();
+	PerformNodeSimulation();
 
 }
 
@@ -76,7 +93,7 @@ void UFMIAdapterComponent::OnDeactivateVehicleComponent()
 		}
 	}
 
-	cleanup();
+	CleanUp();
 
 }
 
@@ -95,7 +112,7 @@ bool UFMIAdapterComponent::ConfigureSignal(const FROS2TopicSetup& Setup)
 
 
 
-void UFMIAdapterComponent::setup_fmu()
+void UFMIAdapterComponent::InitializeFMU()
 {
 	if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*FmuPath))
 	{
@@ -104,8 +121,19 @@ void UFMIAdapterComponent::setup_fmu()
 		return;
 	}
 
-	FString DllPath = FPaths::Combine(FPaths::ProjectDir(), TEXT("Plugins/soda-sim-ros2/Binaries/Win64/fmilib_shared.dll"));
+	TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("soda-sim-ros2"));
+	if (!Plugin.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to find soda-sim-ros2 plugin. Cannot load fmilib_shared.dll."));
+		SetHealth(EVehicleComponentHealth::Error, TEXT("Plugin not found"));
+		return;
+	}
+
+	FString PluginBaseDir = Plugin->GetBaseDir();
+	FString DllPath = FPaths::Combine(PluginBaseDir, TEXT("Binaries/Win64/fmilib_shared.dll"));
+
 	FPlatformProcess::PushDllDirectory(*FPaths::GetPath(DllPath));
+
 	void* Handle = FPlatformProcess::GetDllHandle(*DllPath);
 
 	if (Handle)
@@ -118,90 +146,87 @@ void UFMIAdapterComponent::setup_fmu()
 		return;
 	}
 
-	callbacks.malloc = malloc;
-	callbacks.calloc = calloc;
-	callbacks.realloc = realloc;
-	callbacks.free = free;
-	callbacks.logger = importlogger;
-	callbacks.log_level = jm_log_level_debug;
-	callbacks.context = 0;
+	FmuCallbacks.malloc = malloc;
+	FmuCallbacks.calloc = calloc;
+	FmuCallbacks.realloc = realloc;
+	FmuCallbacks.free = free;
+	FmuCallbacks.logger = importlogger;
+	FmuCallbacks.log_level = jm_log_level_debug;
+	FmuCallbacks.context = 0;
 
 	FString TempDir = FPaths::ProjectSavedDir();
 	std::string TempDirStr = TCHAR_TO_UTF8(*TempDir);
 
-	tmpPath = fmi_import_mk_temp_dir(&callbacks, TempDirStr.c_str(), nullptr);
-	if (!tmpPath) 
+	FmiTmpPath = fmi_import_mk_temp_dir(&FmuCallbacks, TempDirStr.c_str(), nullptr);
+	if (!FmiTmpPath) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Failed to create temporary directory"));
 	}
-
-
 	
 	// Allocate FMILibrary context
-	context_ = fmi_import_allocate_context(&callbacks);
+	FmuContext = fmi_import_allocate_context(&FmuCallbacks);
 	
 	std::string FmuPathStr = TCHAR_TO_UTF8(*FmuPath);
-	version = fmi_import_get_fmi_version(context_, FmuPathStr.c_str(), tmpPath);	
+	FmiVersion = fmi_import_get_fmi_version(FmuContext, FmuPathStr.c_str(), FmiTmpPath);	
 
-
-
-	if (version != fmi_version_2_0_enu) {
+	if (FmiVersion != fmi_version_2_0_enu) {
 
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Only FMI version 2.0 is supported"));
 	}
 
-	fmu_ = fmi2_import_parse_xml(context_, tmpPath, nullptr);
-	if (!fmu_) 
+	FmuModel = fmi2_import_parse_xml(FmuContext, FmiTmpPath, nullptr);
+	if (!FmuModel) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Error parsing FMU XML"));
 	}
 
-	if (fmi2_import_get_fmu_kind(fmu_) != fmi2_fmu_kind_cs) 
+	if (fmi2_import_get_fmu_kind(FmuModel) != fmi2_fmu_kind_cs) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Only Co-Simulation is supported"));
 
 	}
 
-	callBackFunctions.logger = fmi2_log_forwarding;
-	callBackFunctions.allocateMemory = calloc;
-	callBackFunctions.freeMemory = free;
-	callBackFunctions.stepFinished = nullptr;
-	callBackFunctions.componentEnvironment = fmu_;
+	CallBackFunctions.logger = fmi2_log_forwarding;
+	CallBackFunctions.allocateMemory = calloc;
+	CallBackFunctions.freeMemory = free;
+	CallBackFunctions.stepFinished = nullptr;
+	CallBackFunctions.componentEnvironment = FmuModel;
 
-	if (fmi2_import_create_dllfmu(fmu_, fmi2_fmu_kind_cs, &callBackFunctions) != jm_status_success) 
+	if (fmi2_import_create_dllfmu(FmuModel, fmi2_fmu_kind_cs, &CallBackFunctions) != jm_status_success) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Failed to create DLL loading mechanism"));
 	}
 
-	if (fmi2_import_instantiate(fmu_, "FMU_instance", fmi2_cosimulation, nullptr, fmi2_false) != jm_status_success) 
+	if (fmi2_import_instantiate(FmuModel, "FMU_instance", fmi2_cosimulation, nullptr, fmi2_false) != jm_status_success) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Failed to instantiate FMU"));
 	}
 
-	if (fmi2_import_setup_experiment(fmu_, fmi2_true, 1e-4, 0.0, fmi2_false, 0.0) != fmi2_status_ok) 
+	if (fmi2_import_setup_experiment(FmuModel, fmi2_true, 1e-4, 0.0, fmi2_false, 0.0) != fmi2_status_ok) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Failed to setup FMU experiment"));
 	}
 
-	if (fmi2_import_enter_initialization_mode(fmu_) != fmi2_status_ok) 
+	if (fmi2_import_enter_initialization_mode(FmuModel) != fmi2_status_ok) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Failed to enter initialization mode"));
 	}
 
-	if (fmi2_import_exit_initialization_mode(fmu_) != fmi2_status_ok) 
+	if (fmi2_import_exit_initialization_mode(FmuModel) != fmi2_status_ok) 
 	{
 		SetHealth(EVehicleComponentHealth::Error, TEXT("Failed to exit initialization mode"));
 	}
+
+	SetupPublishersAndSubscribers();
 }
 
 
 
-
-void UFMIAdapterComponent::initialize_parameters_and_topics() 
+void UFMIAdapterComponent::InitializeParametersAndTopics()
 {
 
 
-	fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(fmu_, 0);
+	fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(FmuModel, 0);
 	size_t num_variables = fmi2_import_get_variable_list_size(variable_list);
 	Parameters.Empty();
 
@@ -218,12 +243,10 @@ void UFMIAdapterComponent::initialize_parameters_and_topics()
 		}
 
 		if (var_type == fmi2_base_type_real) 
-		{
-
-	
+		{	
 			fmi2_value_reference_t vr = fmi2_import_get_variable_vr(variable);
 			fmi2_real_t value;
-			fmi2_import_get_real(fmu_, &vr, 1, &value);
+			fmi2_import_get_real(FmuModel, &vr, 1, &value);
 
 			FFmuParam Param;
 			Param.Name = FName(UTF8_TO_TCHAR(var_name));
@@ -237,7 +260,7 @@ void UFMIAdapterComponent::initialize_parameters_and_topics()
 		{
 			fmi2_value_reference_t vr = fmi2_import_get_variable_vr(variable);
 			fmi2_integer_t value;
-			fmi2_import_get_integer(fmu_, &vr, 1, &value);
+			fmi2_import_get_integer(FmuModel, &vr, 1, &value);
 
 			FFmuParam Param;
 			Param.Name = FName(UTF8_TO_TCHAR(var_name));
@@ -251,7 +274,7 @@ void UFMIAdapterComponent::initialize_parameters_and_topics()
 		{
 			fmi2_value_reference_t vr = fmi2_import_get_variable_vr(variable);
 			fmi2_boolean_t value;
-			fmi2_import_get_boolean(fmu_, &vr, 1, &value);
+			fmi2_import_get_boolean(FmuModel, &vr, 1, &value);
 
 			FFmuParam Param;
 			Param.Name = FName(UTF8_TO_TCHAR(var_name));
@@ -265,12 +288,12 @@ void UFMIAdapterComponent::initialize_parameters_and_topics()
 	fmi2_import_free_variable_list(variable_list);
 }
 
-void UFMIAdapterComponent::setup_publishers_and_subscribers() 
+void UFMIAdapterComponent::SetupPublishersAndSubscribers()
 {
 	SubscribersNames.Empty();
 	PublishersNames.Empty();
 
-	fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(fmu_, 0);
+	fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(FmuModel, 0);
 	size_t num_variables = fmi2_import_get_variable_list_size(variable_list);
 
 	for (size_t i = 0; i < num_variables; i++) {
@@ -351,11 +374,7 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 				NewSubscriber.MessageTyp = ERosMessageTyp::Float;
 				NewSubscriber.Subscriber = Subscriber;
 				NewSubscriber.VarName = topic_name;
-				SubscriberArray.Add(NewSubscriber);
-
-		
-				
-
+				SubscriberArray.Add(NewSubscriber);					
 
 			}
 			else if (var_type == fmi2_base_type_int)
@@ -393,34 +412,28 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 		}
 	}
 
-
-
 	fmi2_import_free_variable_list(variable_list);
-	initialize_parameters_and_topics();
+	InitializeParametersAndTopics();
 }
 
 
- void UFMIAdapterComponent::run_step() 
+ void UFMIAdapterComponent::RunSimulationStep()
  {
 
-	 if (fmi2_import_do_step(fmu_, current_time_, step_size_, fmi2_true) != fmi2_status_ok)
+	 if (fmi2_import_do_step(FmuModel, CurrentTime, StepSize, fmi2_true) != fmi2_status_ok)
 	 {
 		 UE_LOG(LogSoda, Error, TEXT("UFMIAdapterComponent step failed"));
 	 }
 
-	 current_time_ += step_size_;
-	 publish_outputs();
-	
+	 CurrentTime += StepSize;
+	 PublisOutputs();
 	  
  }
 
 
-
- void UFMIAdapterComponent::publish_outputs()
+ void UFMIAdapterComponent::PublisOutputs()
  {
-
-
-	 fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(fmu_, 0);
+	 fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(FmuModel, 0);
 	 size_t num_variables = fmi2_import_get_variable_list_size(variable_list);
 
 	 for (size_t i = 0; i < num_variables; i++) {
@@ -459,7 +472,7 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 				 if (var_type == fmi2_base_type_real)
 				 {
 					 fmi2_real_t value;
-					 fmi2_import_get_real(fmu_, &vr, 1, &value);
+					 fmi2_import_get_real(FmuModel, &vr, 1, &value);
 
 					 auto TypedPuplisher = StaticCastSharedPtr<ros2::TPublisherSignal<std_msgs::msg::Float32>>(FoundPublisher->Publisher);
 					 if (TypedPuplisher.IsValid())
@@ -471,7 +484,7 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 				 else if (var_type == fmi2_base_type_int)
 				 {
 					 fmi2_integer_t value;
-					 fmi2_import_get_integer(fmu_, &vr, 1, &value);
+					 fmi2_import_get_integer(FmuModel, &vr, 1, &value);
 
 					 auto TypedPuplisher = StaticCastSharedPtr<ros2::TPublisherSignal<std_msgs::msg::Int32>>(FoundPublisher->Publisher);
 					 if (TypedPuplisher.IsValid())
@@ -484,7 +497,7 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 				 else if (var_type == fmi2_base_type_bool)
 				 {
 					 fmi2_boolean_t value;
-					 fmi2_import_get_boolean(fmu_, &vr, 1, &value);
+					 fmi2_import_get_boolean(FmuModel, &vr, 1, &value);
 
 					 auto TypedPuplisher = StaticCastSharedPtr<ros2::TPublisherSignal<std_msgs::msg::Bool>>(FoundPublisher->Publisher);
 					 if (TypedPuplisher.IsValid())
@@ -494,15 +507,9 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 						 TypedPuplisher->Publish(OutputValue);
 
 					 }
-
 				 }
-
-
 			 }
-
 		 }
-
-
 	 }
 
 	 fmi2_import_free_variable_list(variable_list);
@@ -518,7 +525,7 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 			 auto TypedSubscriber = StaticCastSharedPtr<ros2::TSubscriptionSignal<std_msgs::msg::Bool>>(Subscriber.Subscriber);
 			 if (TypedSubscriber.IsValid())
 			 {
-				 handle_input(Subscriber.VarName, (double)TypedSubscriber->GetSignal());
+				 HandleInput(Subscriber.VarName, (double)TypedSubscriber->GetSignal());
 			 }
 		 }
 		 else if (Subscriber.MessageTyp == ERosMessageTyp::Int)
@@ -526,7 +533,7 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 			 auto TypedSubscriber = StaticCastSharedPtr<ros2::TSubscriptionSignal<std_msgs::msg::Int32>>(Subscriber.Subscriber);
 			 if (TypedSubscriber.IsValid())
 			 {
-				 handle_input(Subscriber.VarName, (double)TypedSubscriber->GetSignal());
+				 HandleInput(Subscriber.VarName, (double)TypedSubscriber->GetSignal());
 			 }
 		 }
 		 else if (Subscriber.MessageTyp == ERosMessageTyp::Float)
@@ -535,7 +542,7 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
 			 if (TypedSubscriber.IsValid())
 			 {
 				 UE_LOG(LogTemp, Log, TEXT("Float input detected, value %f"), TypedSubscriber->GetSignal());
-				 handle_input(Subscriber.VarName, (double)TypedSubscriber->GetSignal());
+				 HandleInput(Subscriber.VarName, (double)TypedSubscriber->GetSignal());
 			 }
 		 }
 	 }
@@ -543,81 +550,90 @@ void UFMIAdapterComponent::setup_publishers_and_subscribers()
  }
 
 
-	void UFMIAdapterComponent::RunNode()
+	void UFMIAdapterComponent::PerformNodeSimulation()
 	{
-		UE_LOG(LogTemp, Log, TEXT("We should be running node"));
 		UpdateInputs();
-		run_step();
-
+		RunSimulationStep();
 	}
 
-
-
-	void UFMIAdapterComponent::cleanup()
+	void UFMIAdapterComponent::CleanUp()
 	{
-		if (fmu_) {
-			fmi2_import_terminate(fmu_);
-			fmi2_import_free_instance(fmu_);
-			fmi2_import_destroy_dllfmu(fmu_);
-			fmi2_import_free(fmu_);
-		}
-		if (context_) {
-			fmi_import_free_context(context_);
+		if (GetHealth() != EVehicleComponentHealth::Ok)
+		{
+			return;
 		}
 
-		if (fmi_import_rmdir(&callbacks, tmpPath)) {
-			throw std::runtime_error("FProblem when deleting FMU unpack directory.\n");
+		if (FmuModel) 
+		{
+			fmi2_import_terminate(FmuModel);
+			fmi2_import_free_instance(FmuModel);
+			fmi2_import_destroy_dllfmu(FmuModel);
+			fmi2_import_free(FmuModel);
 		}
-		callbacks.free((void*)tmpPath);
+
+		if (FmuContext) 
+		{
+			fmi_import_free_context(FmuContext);
+		}
+
+		if (fmi_import_rmdir(&FmuCallbacks, FmiTmpPath)) 
+		{
+			UE_LOG(LogSoda, Fatal, TEXT("FProblem when deleting FMU unpack directory"));
+		}
+
+		FmuCallbacks.free((void*)FmiTmpPath);
 	}
 
-	    void UFMIAdapterComponent::handle_input(const FString& variable_name, double value) 
-		{
-	   
-	            // Find the variable in the FMU by its name
-	            fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(fmu_, 0);
-	            size_t num_variables = fmi2_import_get_variable_list_size(variable_list);
-	
-	            for (size_t i = 0; i < num_variables; i++) {
-	                auto variable = fmi2_import_get_variable(variable_list, i);
-	                const char* var_name = fmi2_import_get_variable_name(variable);
-	
-					UE_LOG(LogSoda, Warning, TEXT("UFMIAdapterComponent: compate variable %s with %s"), *variable_name, *FString(UTF8_TO_TCHAR(var_name)));
+	void UFMIAdapterComponent::HandleInput(const FString& VariableName, double value)
+	{
 
-					FString VarAsFString = FString("/")+FString(UTF8_TO_TCHAR(var_name));
+		// Find the variable in the FMU by its name
+		fmi2_import_variable_list_t* variable_list = fmi2_import_get_variable_list(FmuModel, 0);
+		size_t num_variables = fmi2_import_get_variable_list_size(variable_list);
 
-	                if (variable_name == VarAsFString)
-					{
-		                    fmi2_value_reference_t vr = fmi2_import_get_variable_vr(variable);
-	                    auto var_type = fmi2_import_get_variable_base_type(variable);
-	
-	                    // Update the FMU variable based on its type
-	                    if (var_type == fmi2_base_type_real) 
-						{
-	                        fmi2_real_t real_value = static_cast<fmi2_real_t>(value);
-	                        fmi2_import_set_real(fmu_, &vr, 1, &real_value);
-							UE_LOG(LogSoda, Warning, TEXT("UFMIAdapterComponent: variable %s was written with %f value"), *variable_name, real_value);
-	                    } else if (var_type == fmi2_base_type_int) 
-						{
-	                        fmi2_integer_t int_value = static_cast<fmi2_integer_t>(value);
-	                        fmi2_import_set_integer(fmu_, &vr, 1, &int_value);
-	                    } else if (var_type == fmi2_base_type_bool) 
-						{
-	                        fmi2_boolean_t bool_value = static_cast<fmi2_boolean_t>(value != 0.0);
-	                        fmi2_import_set_boolean(fmu_, &vr, 1, &bool_value);
-	                    } else 
-						{
-							UE_LOG(LogSoda, Error, TEXT("UFMIAdapterComponent: unsupported variable type for input %s"),*variable_name);
-	                    }
-	                    fmi2_import_free_variable_list(variable_list);
-	                    return;
-	                }
-	            }
-	
+		for (size_t i = 0; i < num_variables; i++) {
+			auto variable = fmi2_import_get_variable(variable_list, i);
+			const char* var_name = fmi2_import_get_variable_name(variable);
 
-	            fmi2_import_free_variable_list(variable_list);
+			UE_LOG(LogSoda, Warning, TEXT("UFMIAdapterComponent: compate variable %s with %s"), *VariableName, *FString(UTF8_TO_TCHAR(var_name)));
 
-	    }
+			FString VarAsFString = FString("/") + FString(UTF8_TO_TCHAR(var_name));
+
+			if (VariableName == VarAsFString)
+			{
+				fmi2_value_reference_t vr = fmi2_import_get_variable_vr(variable);
+				auto var_type = fmi2_import_get_variable_base_type(variable);
+
+				// Update the FMU variable based on its type
+				if (var_type == fmi2_base_type_real)
+				{
+					fmi2_real_t real_value = static_cast<fmi2_real_t>(value);
+					fmi2_import_set_real(FmuModel, &vr, 1, &real_value);
+					UE_LOG(LogSoda, Warning, TEXT("UFMIAdapterComponent: variable %s was written with %f value"), *VariableName, real_value);
+				}
+				else if (var_type == fmi2_base_type_int)
+				{
+					fmi2_integer_t int_value = static_cast<fmi2_integer_t>(value);
+					fmi2_import_set_integer(FmuModel, &vr, 1, &int_value);
+				}
+				else if (var_type == fmi2_base_type_bool)
+				{
+					fmi2_boolean_t bool_value = static_cast<fmi2_boolean_t>(value != 0.0);
+					fmi2_import_set_boolean(FmuModel, &vr, 1, &bool_value);
+				}
+				else
+				{
+					UE_LOG(LogSoda, Error, TEXT("UFMIAdapterComponent: unsupported variable type for input %s"), *VariableName);
+				}
+				fmi2_import_free_variable_list(variable_list);
+				return;
+			}
+		}
+
+
+		fmi2_import_free_variable_list(variable_list);
+
+	}
 
 
 
@@ -645,13 +661,62 @@ void UFMIAdapterComponent::SpecifyFmuModel()
 }
 
 
-    FString UFMIAdapterComponent::normalize_topic_name(const std::string &name)
+
+#else
+
+
+void UFMIAdapterComponent::SpecifyFmuModel()
+{	
+	UE_LOG(LogSoda, Error, TEXT("FMI adapter is not supported on Linux"));
+}
+
+
+bool UFMIAdapterComponent::OnActivateVehicleComponent()
+{
+	if (!Super::OnActivateVehicleComponent())
 	{
-        std::string normalized_name = name;
-        std::replace(normalized_name.begin(), normalized_name.end(), '.', '_');
-        std::replace(normalized_name.begin(), normalized_name.end(), '[', '_');
-        std::replace(normalized_name.begin(), normalized_name.end(), ']', '_');
-        std::replace(normalized_name.begin(), normalized_name.end(), '{', '_');
-        std::replace(normalized_name.begin(), normalized_name.end(), '}', '_');
-        return    FString(normalized_name.c_str());;
-    }
+		return false;
+	}	
+
+	SetHealth(EVehicleComponentHealth::Error, TEXT("FMI adapter is not supported on Linux"));
+
+	return true;
+}
+
+
+void UFMIAdapterComponent::PostPhysicSimulationDeferred(float DeltaTime, const FPhysBodyKinematic& VehicleKinematic, const TTimestamp& Timestamp)
+{
+	Super::PostPhysicSimulationDeferred(DeltaTime, VehicleKinematic, Timestamp);
+
+	if (GetHealth() != EVehicleComponentHealth::Ok)
+	{
+		return;
+	}
+
+
+
+}
+
+void UFMIAdapterComponent::OnDeactivateVehicleComponent()
+{
+	Super::OnDeactivateVehicleComponent();
+	
+}
+
+
+
+void UFMIAdapterComponent::DrawDebug(UCanvas* Canvas, float& YL, float& YPos)
+{
+	Super::DrawDebug(Canvas, YL, YPos);
+
+}
+
+bool UFMIAdapterComponent::ConfigureSignal(const FROS2TopicSetup& Setup)
+{
+	return false;
+}
+
+
+
+
+#endif

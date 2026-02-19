@@ -118,7 +118,17 @@ FString FSodaROS2Module::ROSRootPath = "";
 
 void FSodaROS2Module::StartupModule()
 {
-	FString ROSModulePath = IPluginManager::Get().FindPlugin(TEXT("ROSHumble"))->GetBaseDir() / TEXT("Source") / TEXT("ROSHumble");
+	FString ROSPluginName;
+
+#if defined(ROSJazzy) 
+	ROSPluginName = TEXT("ROSJazzy");
+#elif defined(ROSHumble)
+	ROSPluginName = TEXT("ROSHumble");
+#else
+	UE_LOG(LogROS2, Fatal, TEXT("FSodaROS2Module::StartupModule(); ROS version isn't defined."));
+#endif
+
+	FString ROSModulePath = IPluginManager::Get().FindPlugin(ROSPluginName)->GetBaseDir() / TEXT("Source") / ROSPluginName;
 #if PLATFORM_WINDOWS
 	ROSRootPath = FPaths::ConvertRelativePathToFull(ROSModulePath / TEXT("Win64"));
 #elif PLATFORM_LINUX
@@ -141,6 +151,11 @@ void FSodaROS2Module::StartupModule()
 
 	ros2::AddPathToEnv(ROS2Bin, TEXT("Path"));
 
+#if defined(ROSJazzy)
+	ros2::AddPathToEnv(ROSRootPath / TEXT("opt") / TEXT("libyaml_vendor") / TEXT("bin"), TEXT("Path"));
+	ros2::AddPathToEnv(ROSRootPath / TEXT("opt") / TEXT("spdlog_vendor") / TEXT("bin"), TEXT("Path"));
+#endif
+
 	UE_LOG(LogROS2, Log, TEXT("FSodaROS2Module::StartupModule(); Path = %s"), *FPlatformMisc::GetEnvironmentVariable(TEXT("Path")));
 
 	TArray<FString> DllPaths =
@@ -160,7 +175,7 @@ void FSodaROS2Module::StartupModule()
 		void* LibHandle = FPlatformProcess::GetDllHandle(*It);
 		if (LibHandle == nullptr)
 		{
-			UE_LOG(LogROS2, Fatal, TEXT("FSodaROS2Module::StartupModule()? Failed to load required library %s. Plug-in will not be functional."), *It);
+			UE_LOG(LogROS2, Fatal, TEXT("FSodaROS2Module::StartupModule(); Failed to load required library %s. Plug-in will not be functional."), *It);
 		}
 		else
 		{

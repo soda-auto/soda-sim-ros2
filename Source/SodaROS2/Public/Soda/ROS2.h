@@ -77,7 +77,7 @@ enum class EQoSCompatibility : uint8
 
 
 USTRUCT(BlueprintType)
-struct FQoS
+struct SODAROS2_API FQoS
 {
 	GENERATED_BODY()
 
@@ -174,8 +174,8 @@ struct SODAROS2_API FROS2TopicSetup
 
 namespace ros2
 {
-	template<typename MessageT> class SODAROS2_API TPublisher;
-	template<typename MessageT> class SODAROS2_API TSubscription;
+	template<typename MessageT> class TPublisher;
+	template<typename MessageT> class TSubscription;
 }
 
 class SODAROS2_API FSodaROS2Module : public IModuleInterface
@@ -221,7 +221,7 @@ namespace ros2
 	 *  TPublisher
 	 */
 	template<typename MessageT>
-	class SODAROS2_API TPublisher : public ros2_ue_wrapper::TPublisher<MessageT>
+	class TPublisher : public ros2_ue_wrapper::TPublisher<MessageT>
 	{
 	public:
 		static TSharedPtr<ros2::TPublisher<MessageT>> Create(TSharedRef<ros2_ue_wrapper::FNode> Node, const FString& Topic, const FQoS& QoS)
@@ -259,7 +259,7 @@ namespace ros2
 	 *  TSubscription
 	 */
 	template<typename MessageT>
-	class SODAROS2_API TSubscription : public ros2_ue_wrapper::TSubscription<MessageT>
+	class TSubscription : public ros2_ue_wrapper::TSubscription<MessageT>
 	{
 	public:
 		using TCallback = TFunction<void(const std::shared_ptr<MessageT>, const rmw_message_info_t&)>;
@@ -301,10 +301,38 @@ namespace ros2
 	};
 
 	/**
+ *  FPubliserSignalBase
+ */
+
+	class FPubliserSignalBase
+	{
+	public:
+		FPubliserSignalBase() = default;
+		virtual ~FPubliserSignalBase() {};
+
+		virtual void Stop() {};
+	};
+
+	/**
+	*  FSubscriberSignalBase
+	*/
+
+	class FSubscriberSignalBase
+	{
+	public:
+		FSubscriberSignalBase() = default;
+		virtual ~FSubscriberSignalBase() {};
+
+		virtual void Stop() {};
+
+	};
+
+
+	/**
 	 *  TPublisherSignal
 	 */
 	template<typename MessageT>
-	class TPublisherSignal
+	class TPublisherSignal : public FPubliserSignalBase
 	{
 	public:
 		using TDataTyp = MessageT::_data_type;
@@ -357,7 +385,7 @@ namespace ros2
 	 *  TSubscriptionSignal
 	 */
 	template<typename MessageT>
-	class TSubscriptionSignal
+	class TSubscriptionSignal : public FSubscriberSignalBase
 	{
 	public:
 		using TDataTyp = MessageT::_data_type;

@@ -298,11 +298,11 @@ void UIOBusROS2Component::DrawDebug(UCanvas* Canvas, float& YL, float& YPos)
 					Pin->GetLastPublishSourceValue().Frequency,
 					Pin->GetLastPublishSourceValue().Duty),
 					16, YPos);
-				YPos += Canvas->DrawText(RenderFont, FString::Printf(TEXT("   Measured: %.1fA[%i] %.1V[%i]"),
+				YPos += Canvas->DrawText(RenderFont, FString::Printf(TEXT("   Measured: %.1fA[%s] %.1fV[%s]"),
 					Pin->GetLastPublishFeedbackValue().MeasuredCurrent,
-					Pin->GetLastPublishFeedbackValue().bIsMeasuredCurrentValid,
+					Pin->GetLastPublishFeedbackValue().bIsMeasuredCurrentValid ? TEXT("T") : TEXT("F"),
 					Pin->GetLastPublishFeedbackValue().MeasuredVoltage,
-					Pin->GetLastPublishFeedbackValue().bIsMeasuredVoltageValid),
+					Pin->GetLastPublishFeedbackValue().bIsMeasuredVoltageValid ? TEXT("T") : TEXT("F")),
 					16, YPos);
 			}
 		}

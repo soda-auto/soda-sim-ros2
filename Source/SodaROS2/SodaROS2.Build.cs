@@ -17,7 +17,8 @@ public class SodaROS2 : ModuleRules
 				"Engine",
                 "UnrealSoda",
                 "RuntimeEditor",
-                "ROSHumble" // "ROSHumble" or "ROSJazzy"
+                "FmiLibAPI",
+                "ROSJazzy" // "ROSHumble" or "ROSJazzy"
 			}
 		);
 
@@ -33,9 +34,9 @@ public class SodaROS2 : ModuleRules
         //Definitions.Add("_CRT_SECURE_NO_WARNINGS");
         bEnableExceptions = true;
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-		bEnableUndefinedIdentifierWarnings = false;
-		//SetupModulePhysicsSupport(Target);
-		//bUsePrecompiled = true;
-		bUseUnity = false;
+        UndefinedIdentifierWarningLevel = WarningLevel.Off;
+        //SetupModulePhysicsSupport(Target);
+        //bUsePrecompiled = true;
+        bUseUnity = false;
     }
 }
